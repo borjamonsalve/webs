@@ -1,0 +1,2166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>QuimiTetris 4º ESO — Tabla Periódica Interactiva</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter y JetBrains Mono para datos científicos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome para iconos didácticos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            lab: {
+              bg: '#0b1120',
+              panel: '#111827',
+              card: '#1e293b',
+              border: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Variables CSS para Modo Oscuro (por defecto) y Modo Claro */
+    :root {
+      --bg-body: #090e1a;
+      --bg-panel: rgba(15, 23, 42, 0.96);
+      --bg-card: #1e293b;
+      --bg-subcard: rgba(2, 6, 23, 0.85);
+      --bg-slot: rgba(15, 23, 42, 0.55);
+      --border-main: #1e293b;
+      --border-sub: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --grid-line: rgba(30, 41, 59, 0.35);
+      --radial-1: rgba(56, 189, 248, 0.08);
+      --radial-2: rgba(168, 85, 247, 0.08);
+      --cell-empty-bg: rgba(15, 23, 42, 0.45);
+      --cell-empty-border: #334155;
+    }
+
+    body.light-mode {
+      --bg-body: #f1f5f9;
+      --bg-panel: rgba(255, 255, 255, 0.97);
+      --bg-card: #f8fafc;
+      --bg-subcard: #eef2f6;
+      --bg-slot: rgba(226, 232, 240, 0.65);
+      --border-main: #cbd5e1;
+      --border-sub: #94a3b8;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --grid-line: rgba(148, 163, 184, 0.22);
+      --radial-1: rgba(14, 165, 233, 0.09);
+      --radial-2: rgba(139, 92, 246, 0.07);
+      --cell-empty-bg: #ffffff;
+      --cell-empty-border: #cbd5e1;
+    }
+
+    /* Estilos personalizados y animaciones de laboratorio */
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      margin: 0;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Fondo sutil de cuadrícula de laboratorio */
+    .lab-grid-bg {
+      background-image: 
+        radial-gradient(circle at 15% 20%, var(--radial-1) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, var(--radial-2) 0%, transparent 45%),
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+    }
+
+    /* Adaptación dinámica de contenedores en Modo Claro */
+    body.light-mode aside#left-panel {
+      background-color: var(--bg-panel) !important;
+      border-color: var(--border-main) !important;
+    }
+    body.light-mode main > div,
+    body.light-mode #center-dashboard,
+    body.light-mode #tetris-container {
+      background-color: var(--bg-panel) !important;
+      border-color: var(--border-main) !important;
+    }
+    body.light-mode .bg-slate-950\/90,
+    body.light-mode .bg-slate-950\/85,
+    body.light-mode .bg-slate-950\/80,
+    body.light-mode .bg-slate-950,
+    body.light-mode .bg-slate-900\/90,
+    body.light-mode .bg-slate-900\/80,
+    body.light-mode .bg-slate-900,
+    body.light-mode .bg-slate-800 {
+      background-color: var(--bg-subcard) !important;
+      border-color: var(--border-main) !important;
+      color: var(--text-primary) !important;
+    }
+    body.light-mode .text-white { color: var(--text-primary) !important; }
+    body.light-mode .text-slate-200,
+    body.light-mode .text-slate-300 { color: #1e293b !important; }
+    body.light-mode .text-slate-400,
+    body.light-mode .text-slate-500 { color: var(--text-secondary) !important; }
+    body.light-mode .tetris-piece,
+    body.light-mode .tetris-piece .text-white,
+    body.light-mode .pt-cell[class*="cat-"],
+    body.light-mode #drag-ghost {
+      color: #ffffff !important;
+    }
+    body.light-mode #tetris-overlay {
+      background-color: rgba(248, 250, 252, 0.9) !important;
+    }
+
+    /* Colores químicos estándar por familia (alto contraste y estética moderna) */
+    .cat-alcalino { background: linear-gradient(145deg, #ef4444, #b91c1c); border-color: #fca5a5; color: #fff; }
+    .cat-alcalinoterreo { background: linear-gradient(145deg, #f97316, #c2410c); border-color: #fdba74; color: #fff; }
+    .cat-transicion { background: linear-gradient(145deg, #eab308, #a16207); border-color: #fde047; color: #fff; }
+    .cat-otros-metales { background: linear-gradient(145deg, #10b981, #047857); border-color: #6ee7b7; color: #fff; }
+    .cat-metaloide { background: linear-gradient(145deg, #06b6d4, #0e7490); border-color: #67e8f9; color: #fff; }
+    .cat-no-metal { background: linear-gradient(145deg, #3b82f6, #1d4ed8); border-color: #93c5fd; color: #fff; }
+    .cat-halogeno { background: linear-gradient(145deg, #6366f1, #4338ca); border-color: #a5b4fc; color: #fff; }
+    .cat-gas-noble { background: linear-gradient(145deg, #a855f7, #7e22ce); border-color: #d8b4fe; color: #fff; }
+    .cat-lantanido { background: linear-gradient(145deg, #ec4899, #be185d); border-color: #f9a8d4; color: #fff; }
+    .cat-actinido { background: linear-gradient(145deg, #f43f5e, #be123c); border-color: #fda4af; color: #fff; }
+
+    /* Bordes tenues para celdas vacías según categoría (modo ayuda) */
+    .hint-alcalino { border-color: rgba(239, 68, 68, 0.65); background-color: rgba(239, 68, 68, 0.11); }
+    .hint-alcalinoterreo { border-color: rgba(249, 115, 22, 0.65); background-color: rgba(249, 115, 22, 0.11); }
+    .hint-transicion { border-color: rgba(234, 179, 8, 0.55); background-color: rgba(234, 179, 8, 0.09); }
+    .hint-otros-metales { border-color: rgba(16, 185, 129, 0.65); background-color: rgba(16, 185, 129, 0.11); }
+    .hint-metaloide { border-color: rgba(6, 182, 212, 0.65); background-color: rgba(6, 182, 212, 0.11); }
+    .hint-no-metal { border-color: rgba(59, 130, 246, 0.65); background-color: rgba(59, 130, 246, 0.11); }
+    .hint-halogeno { border-color: rgba(99, 102, 241, 0.65); background-color: rgba(99, 102, 241, 0.11); }
+    .hint-gas-noble { border-color: rgba(168, 85, 247, 0.65); background-color: rgba(168, 85, 247, 0.11); }
+    .hint-lantanido { border-color: rgba(236, 72, 153, 0.6); background-color: rgba(236, 72, 153, 0.1); }
+    .hint-actinido { border-color: rgba(244, 63, 94, 0.6); background-color: rgba(244, 63, 94, 0.1); }
+
+    /* Cuadrícula de la Tabla Periódica: 18 columnas, 9 filas (7 periodos + 2 series inferiores) */
+    .periodic-grid {
+      display: grid;
+      grid-template-columns: repeat(18, minmax(0, 1fr));
+      grid-template-rows: repeat(7, minmax(0, 1fr)) 0.35fr repeat(2, minmax(0, 1fr));
+      gap: 3px;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Cuadrícula Tetris Izquierda: 4 columnas x 5 filas = 20 huecos */
+    .tetris-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    /* Capa absoluta para las piezas en caída continua */
+    #falling-layer {
+      position: absolute;
+      inset: 8px;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .falling-piece {
+      position: absolute;
+      pointer-events: auto;
+      will-change: transform, top, left;
+      transition: box-shadow 0.15s ease;
+    }
+
+    /* Animaciones */
+    @keyframes landThud {
+      0% { transform: scaleY(0.88) scaleX(1.06); }
+      60% { transform: scaleY(1.03) scaleX(0.98); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes popSuccess {
+      0% { transform: scale(0.75); filter: brightness(1.6); }
+      50% { transform: scale(1.14); filter: brightness(1.3); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+
+    @keyframes shakeError {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    @keyframes pulseWarning {
+      0%, 100% { box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.4); }
+      50% { box-shadow: inset 0 0 18px 2px rgba(239, 68, 68, 0.85); }
+    }
+
+    .anim-land {
+      animation: landThud 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .anim-success {
+      animation: popSuccess 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .anim-error {
+      animation: shakeError 0.38s ease-in-out;
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.85) !important;
+    }
+
+    .tetris-danger {
+      animation: pulseWarning 1.2s infinite;
+    }
+
+    /* Ficha arrastrable flotante */
+    #drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%) scale(1.12) rotate(3deg);
+      box-shadow: 0 18px 35px rgba(0, 0, 0, 0.65), 0 0 16px rgba(56, 189, 248, 0.5);
+      transition: transform 0.08s ease-out;
+    }
+
+    /* Hover al pasar sobre una casilla destino */
+    .pt-cell.drag-over {
+      transform: scale(1.1);
+      z-index: 20;
+      border-color: #38bdf8 !important;
+      background-color: rgba(56, 189, 248, 0.25) !important;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+    }
+
+    /* Ficha seleccionada por clic (modo accesibilidad / táctil alternativo) */
+    .tetris-piece.selected-piece {
+      outline: 3px solid #38bdf8;
+      outline-offset: 2px;
+      transform: scale(1.06);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.8);
+    }
+
+    /* Highlight de categoría en leyenda */
+    .dimmed-cell {
+      opacity: 0.25;
+      filter: grayscale(0.7);
+    }
+
+    /* Scrollbar discreto si se abre modal en pantallas pequeñas */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+  </style>
+</head>
+<body class="lab-grid-bg flex flex-col lg:flex-row h-screen w-screen overflow-hidden text-slate-100">
+
+  <!-- =====================================================================
+       PANEL IZQUIERDO (~20% ancho): CRONÓMETRO, MARCADOR Y ZONA TETRIS (4x5)
+       ===================================================================== -->
+  <aside id="left-panel" class="w-full lg:w-[21%] xl:w-[20%] h-[38vh] lg:h-full bg-slate-900/95 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col justify-between p-2.5 sm:p-3 shadow-2xl z-20 shrink-0">
+    
+    <!-- Cabecera del Panel Izquierdo: Título y controles compactos -->
+    <div class="flex flex-col gap-1.5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <i class="fa-solid fa-atom text-white text-sm"></i>
+          </div>
+          <div>
+            <h1 class="text-sm sm:text-base font-extrabold tracking-tight leading-none text-white">QuimiTetris</h1>
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-cyan-500">4º ESO • Química</span>
+          </div>
+        </div>
+
+        <!-- Botones de Tema (Claro/Oscuro), Música/Sonido y Ayuda -->
+        <div class="flex items-center gap-1">
+          <button id="btn-theme" title="Cambiar entre Modo Claro y Oscuro" class="px-1.5 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center gap-1 text-[10px] font-bold text-amber-400 transition">
+            <i id="theme-icon" class="fa-solid fa-sun"></i>
+            <span id="theme-label" class="hidden xl:inline">Claro</span>
+          </button>
+          <button id="btn-sound" title="Activar/Silenciar melodía Tetris y efectos" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-cyan-400 transition">
+            <i class="fa-solid fa-music text-xs"></i>
+          </button>
+          <button id="btn-help" title="Instrucciones y reglas" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-slate-300 transition">
+            <i class="fa-solid fa-circle-question text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cronómetro y Marcador de Puntos -->
+      <div class="grid grid-cols-2 gap-1.5 bg-slate-950/90 p-1.5 rounded-xl border border-slate-800/90 shadow-inner">
+        <div class="flex flex-col items-center justify-center bg-slate-900/80 py-1 px-2 rounded-lg border border-slate-800">
+          <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1">
+            <i class="fa-regular fa-clock text-cyan-400"></i> Tiempo
+          </span>
+          <span id="timer-display" class="font-mono text-base sm:text-lg font-bold text-white tracking-wider">00:00</span>
+        </div>
+        <div class="flex flex-col items-center justify-center bg-slate-900/80 py-1 px-2 rounded-lg border border-slate-800 relative overflow-hidden">
+          <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-star text-amber-400"></i> Puntos
+          </span>
+          <span id="score-display" class="font-mono text-base sm:text-lg font-bold text-emerald-500 tracking-wider">0</span>
+          <span id="score-delta" class="absolute right-1.5 top-0.5 text-[10px] font-bold opacity-0 transition-opacity duration-300"></span>
+        </div>
+      </div>
+
+      <!-- Selectores de Nivel, Velocidad de Caída y Modo de Ficha -->
+      <div class="grid grid-cols-2 gap-1.5">
+        <select id="select-difficulty" title="Selecciona el conjunto de elementos" class="bg-slate-800 hover:bg-slate-750 text-[11px] font-semibold text-slate-200 rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:border-cyan-500 cursor-pointer">
+          <option value="eso">Temario: 4º ESO (46)</option>
+          <option value="all">Temario: Completa (118)</option>
+        </select>
+
+        <select id="select-speed" title="Velocidad de caída de las piezas" class="bg-slate-800 hover:bg-slate-750 text-[11px] font-semibold text-slate-200 rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:border-cyan-500 cursor-pointer">
+          <option value="slow">Vel: Lento (Relajado)</option>
+          <option value="normal" selected>Vel: Normal (4º ESO)</option>
+          <option value="fast">Vel: Rápido (Experto)</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-1">
+        <select id="select-hints" title="Información visible en cada ficha" class="bg-slate-800 hover:bg-slate-750 text-[11px] font-semibold text-slate-200 rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:border-cyan-500 cursor-pointer">
+          <option value="both">Ficha: Símbolo + Nombre</option>
+          <option value="symbol-only">Ficha: Solo Símbolo</option>
+          <option value="name-only">Ficha: Solo Nombre</option>
+        </select>
+      </div>
+
+      <!-- PANEL DE AYUDAS (Número atómico Z + Sombreado por familias químicas) -->
+      <div class="bg-slate-950/85 px-2.5 py-1.5 rounded-xl border border-slate-800 space-y-1.5">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-1">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-cyan-400 flex items-center gap-1">
+            <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> Panel de Ayudas
+          </span>
+          <span class="text-[9px] text-slate-500 font-semibold">Pistas visuales</span>
+        </div>
+
+        <!-- Opción 1: Mostrar / Ocultar número atómico Z -->
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-hashtag text-cyan-400 text-[10px] w-3 text-center"></i> Número atómico (Z)
+          </span>
+          <button id="btn-toggle-z" type="button" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-bold text-slate-300 transition flex items-center gap-1">
+            <i id="icon-toggle-z" class="fa-solid fa-eye-slash text-rose-400"></i>
+            <span id="label-toggle-z">Oculto</span>
+          </button>
+        </div>
+
+        <!-- Opción 2: Sombrear casillas por color de familia (gases nobles, lantánidos, etc.) -->
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-palette text-purple-400 text-[10px] w-3 text-center"></i> Colores por familia
+          </span>
+          <button id="btn-toggle-colors" type="button" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-bold text-slate-300 transition flex items-center gap-1">
+            <i id="icon-toggle-colors" class="fa-solid fa-eye text-emerald-400"></i>
+            <span id="label-toggle-colors">Activado</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Botones Iniciar / Pausar / Reiniciar -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-start-pause" class="flex-1 py-1.5 px-3 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-1.5 transition active:scale-95">
+          <i class="fa-solid fa-play"></i> <span>Comenzar</span>
+        </button>
+        <button id="btn-topscore-open" title="Ver clasificación Top-7" class="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-amber-900/50 hover:text-amber-300 hover:border-amber-600 border border-slate-700 text-amber-400 font-semibold text-xs transition active:scale-95">
+          <i class="fa-solid fa-trophy"></i>
+        </button>
+        <button id="btn-reset" title="Preparar nueva partida" class="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 hover:text-rose-200 hover:border-rose-700 border border-slate-700 text-slate-300 font-semibold text-xs transition active:scale-95">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Zona Tetris: 4 columnas x 5 filas (20 huecos) -->
+    <div class="flex-1 flex flex-col min-h-0 my-1.5">
+      <div class="flex items-center justify-between mb-1 px-0.5">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <i class="fa-solid fa-cubes-stacked text-cyan-400"></i> Zona Tetris (4×5)
+        </span>
+        <span id="queue-counter" class="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+          0 / 20
+        </span>
+      </div>
+
+      <!-- Contenedor visual del tablero Tetris 4x5 -->
+      <div id="tetris-container" class="flex-1 bg-slate-950/90 rounded-xl border-2 border-slate-800 p-2 relative overflow-hidden flex flex-col justify-end shadow-inner">
+        <!-- Indicador de zona superior de peligro -->
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500/40 via-amber-500/40 to-rose-500/40"></div>
+        
+        <!-- Cuadrícula 4x5 donde se apilan las fichas aterrizadas -->
+        <div id="tetris-grid" class="tetris-grid w-full h-full">
+          <!-- Se genera dinámicamente con 20 celdas (fila 0 arriba .. fila 4 abajo) -->
+        </div>
+
+        <!-- Capa de física donde las piezas caen continuamente por las 4 columnas -->
+        <div id="falling-layer"></div>
+
+        <!-- Overlay de Pausa / Bienvenida sobre la zona Tetris -->
+        <div id="tetris-overlay" class="absolute inset-0 bg-slate-950/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-3 text-center z-20">
+          <div class="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center mb-2 text-cyan-400">
+            <i class="fa-solid fa-flask-vial text-lg"></i>
+          </div>
+          <p id="overlay-title" class="text-xs sm:text-sm font-bold text-white mb-1">¿Listo para practicar?</p>
+          <p id="overlay-subtitle" class="text-[11px] text-slate-400 leading-snug mb-2.5">Atrapa los elementos mientras caen o desde la pila y arrástralos a su casilla.</p>
+          <button id="btn-overlay-start" class="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs shadow-lg transition">
+            ¡Comenzar ahora!
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pie informativo compacto -->
+    <div class="hidden lg:flex items-center justify-between text-[10px] text-slate-500 px-1">
+      <span>Arrastra en el aire o apilada</span>
+      <span class="text-rose-400 font-semibold">Fallo: -1 pt</span>
+    </div>
+  </aside>
+
+  <!-- =====================================================================
+       PANEL DERECHO (~80% ancho): TABLA PERIÓDICA Y ESTADÍSTICAS EN TIEMPO REAL
+       ===================================================================== -->
+  <main class="w-full lg:w-[79%] xl:w-[80%] h-[64vh] lg:h-full flex flex-col p-2 sm:p-3 overflow-hidden relative">
+    
+    <!-- Toast de notificaciones rápidas (aciertos/errores/feedback) -->
+    <div id="feedback-banner" class="pointer-events-none fixed top-3 right-3 z-50 flex flex-col gap-1.5 items-end"></div>
+
+      <!-- Contenedor Principal de la Tabla Periódica -->
+    <div class="flex-1 w-full h-full bg-slate-900/60 border border-slate-800/90 rounded-2xl p-2 sm:p-3 shadow-2xl relative flex flex-col justify-center overflow-hidden">
+      
+      <!-- La Cuadrícula de 18x10 (7 periodos + espacio + 2 filas tierras raras) -->
+      <div id="periodic-table" class="periodic-grid relative">
+        
+        <!-- ===============================================================
+             PANEL CENTRAL SUPERIOR (HUECO SOBRE METALES DE TRANSICIÓN)
+             Ocupa columnas 3 a 12, filas 1 a 3
+             =============================================================== -->
+        <div id="center-dashboard" style="grid-column: 3 / 13; grid-row: 1 / 4;" class="bg-slate-950/85 border border-slate-800/95 rounded-xl p-2 sm:p-2.5 flex flex-col justify-between shadow-lg backdrop-blur-sm overflow-hidden m-0.5">
+          
+          <!-- Fila superior: Progreso y las 3 métricas solicitadas -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-1.5 sm:gap-2 h-full items-stretch">
+            
+            <!-- Bloque Progreso -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-1.5 sm:p-2 flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Progreso</span>
+                <span id="progress-percent" class="text-[10px] font-mono font-bold text-cyan-400">0%</span>
+              </div>
+              <div class="my-auto">
+                <div class="text-sm sm:text-base font-extrabold font-mono text-white leading-tight">
+                  <span id="placed-count">0</span> <span class="text-slate-500 text-xs">/ <span id="total-count">46</span></span>
+                </div>
+                <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
+                  <div id="progress-bar" class="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+              <span class="text-[9px] text-slate-400 truncate">Clic en colocados = Ficha</span>
+            </div>
+
+            <!-- Métrica 1: Más rápido colocado -->
+            <div class="bg-slate-900/90 border border-emerald-900/40 rounded-lg p-1.5 sm:p-2 flex flex-col justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                <span>⚡</span> Más rápido
+              </span>
+              <div id="stat-fastest-val" class="my-auto">
+                <div class="text-xs font-bold text-slate-400 italic">Sin datos aún</div>
+              </div>
+              <span id="stat-fastest-time" class="text-[10px] font-mono text-slate-500">-- s</span>
+            </div>
+
+            <!-- Métrica 2: Más lento en colocar -->
+            <div class="bg-slate-900/90 border border-amber-900/40 rounded-lg p-1.5 sm:p-2 flex flex-col justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                <span>🐢</span> Más lento
+              </span>
+              <div id="stat-slowest-val" class="my-auto">
+                <div class="text-xs font-bold text-slate-400 italic">Sin datos aún</div>
+              </div>
+              <span id="stat-slowest-time" class="text-[10px] font-mono text-slate-500">-- s</span>
+            </div>
+
+            <!-- Métrica 3: Más intentos necesitó -->
+            <div class="bg-slate-900/90 border border-rose-900/40 rounded-lg p-1.5 sm:p-2 flex flex-col justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1">
+                <span>🎯</span> Más intentos
+              </span>
+              <div id="stat-attempts-val" class="my-auto">
+                <div class="text-xs font-bold text-slate-400 italic">Sin fallos aún</div>
+              </div>
+              <span id="stat-attempts-count" class="text-[10px] font-mono text-slate-500">0 fallos</span>
+            </div>
+
+          </div>
+
+          <!-- Fila inferior: Leyenda interactiva de grupos químicos (IUPAC) -->
+          <div id="legend-bar" class="hidden sm:flex flex-wrap items-center justify-center gap-1 pt-1.5 mt-1.5 border-t border-slate-800/80">
+            <!-- Botones de leyenda generados por JS para resaltar grupos al pasar el ratón -->
+          </div>
+        </div>
+
+        <!-- Marcadores de Lantánidos (57-71) y Actínidos (89-103) en Periodos 6 y 7, Grupo 3 -->
+        <div style="grid-column: 3; grid-row: 6;" class="rounded-md border border-pink-500/40 bg-pink-950/20 flex flex-col items-center justify-center text-[9px] sm:text-[10px] font-bold text-pink-300 leading-tight p-0.5">
+          <span>57-71</span>
+          <span class="text-[8px] opacity-75">Lant.</span>
+        </div>
+        <div style="grid-column: 3; grid-row: 7;" class="rounded-md border border-rose-500/40 bg-rose-950/20 flex flex-col items-center justify-center text-[9px] sm:text-[10px] font-bold text-rose-300 leading-tight p-0.5">
+          <span>89-103</span>
+          <span class="text-[8px] opacity-75">Act.</span>
+        </div>
+
+        <!-- Las 118 celdas de los elementos se inyectan aquí mediante JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Elemento fantasma flotante durante el Drag & Drop -->
+  <div id="drag-ghost" class="hidden w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 flex flex-col items-center justify-center p-1 text-center">
+    <span id="ghost-z" class="text-[9px] font-mono font-bold leading-none opacity-90">1</span>
+    <span id="ghost-sym" class="text-lg sm:text-xl font-extrabold leading-tight">H</span>
+    <span id="ghost-name" class="text-[8px] font-semibold truncate w-full leading-none">Hidrógeno</span>
+  </div>
+
+  <!-- =====================================================================
+       MODAL DE FICHA DIDÁCTICA (AL HACER CLIC EN UN ELEMENTO YA COLOCADO)
+       ===================================================================== -->
+  <div id="element-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl relative animate-[popSuccess_0.25s_ease-out]">
+      <button id="close-element-modal" class="absolute top-3.5 right-3.5 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-4 mb-4">
+        <div id="modal-el-badge" class="w-20 h-20 rounded-2xl border-2 flex flex-col items-center justify-center shrink-0 shadow-lg">
+          <span id="modal-el-z" class="text-xs font-mono font-bold">1</span>
+          <span id="modal-el-sym" class="text-3xl font-extrabold leading-none my-0.5">H</span>
+          <span id="modal-el-mass" class="text-[10px] font-mono opacity-90">1,008</span>
+        </div>
+        <div>
+          <span id="modal-el-cat" class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-cyan-300 border border-slate-700 mb-1">No metal</span>
+          <h2 id="modal-el-name" class="text-2xl font-extrabold text-white">Hidrógeno</h2>
+          <p id="modal-el-pos" class="text-xs text-slate-400">Grupo 1 • Periodo 1</p>
+        </div>
+      </div>
+
+      <div class="space-y-2.5 text-xs sm:text-sm">
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Configuración electrónica</span>
+          <span id="modal-el-config" class="font-mono font-semibold text-cyan-300">1s¹</span>
+        </div>
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Estados de oxidación habituales (4º ESO)</span>
+          <span id="modal-el-ox" class="font-mono font-semibold text-amber-300">+1, -1</span>
+        </div>
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Curiosidad / Uso cotidiano</span>
+          <p id="modal-el-use" class="text-slate-300 leading-relaxed">Es el elemento más abundante del universo y componente esencial del agua y los compuestos orgánicos.</p>
+        </div>
+        <div id="modal-el-perf" class="bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-800/40 flex items-center justify-between text-xs text-emerald-300">
+          <span>Tu marca en esta partida:</span>
+          <span id="modal-el-stats" class="font-mono font-bold">2.4s • 1 intento</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL DE RESUMEN FINAL + TOP-SCORE DE 7 POSICIONES
+       ===================================================================== -->
+  <div id="summary-modal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl text-center relative max-h-[94vh] overflow-y-auto">
+      <div id="summary-icon" class="w-14 h-14 rounded-2xl mx-auto mb-2.5 flex items-center justify-center text-3xl shadow-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+        🏆
+      </div>
+      <h2 id="summary-title" class="text-xl sm:text-2xl font-extrabold text-white mb-1">¡Tabla Completada!</h2>
+      <p id="summary-subtitle" class="text-xs sm:text-sm text-slate-400 mb-4">Has dominado los elementos químicos de 4º de la ESO.</p>
+
+      <!-- Tarjetas de Puntuación y Tiempo Total -->
+      <div class="grid grid-cols-3 gap-2 mb-3.5">
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <span class="text-[10px] uppercase text-slate-400 font-bold block">Puntuación</span>
+          <span id="sum-score" class="text-lg sm:text-xl font-mono font-extrabold text-emerald-400">0</span>
+        </div>
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <span class="text-[10px] uppercase text-slate-400 font-bold block">Tiempo Total</span>
+          <span id="sum-time" class="text-lg sm:text-xl font-mono font-extrabold text-cyan-400">00:00</span>
+        </div>
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <span class="text-[10px] uppercase text-slate-400 font-bold block">Colocados</span>
+          <span id="sum-placed" class="text-lg sm:text-xl font-mono font-extrabold text-white">0/46</span>
+        </div>
+      </div>
+
+      <!-- Formulario si la puntuación entra en el TOP-7 -->
+      <div id="topscore-entry-box" class="hidden bg-amber-500/10 border border-amber-500/50 rounded-xl p-3 mb-3.5 text-left">
+        <div class="flex items-center gap-2 text-amber-300 font-extrabold text-xs sm:text-sm mb-1.5">
+          <i class="fa-solid fa-medal"></i>
+          <span>¡Enhorabuena! Tu puntuación entra en el TOP-7</span>
+        </div>
+        <div class="flex gap-2">
+          <input id="topscore-name-input" type="text" maxlength="20" placeholder="Escribe tu nombre o iniciales..." class="flex-1 bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-white font-semibold focus:outline-none" />
+          <button id="btn-save-topscore" type="button" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition shrink-0">
+            Guardar
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla TOP-SCORE 7 posiciones -->
+      <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 mb-3.5 text-left">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-trophy"></i> TOP-SCORE (7 Mejores Marcas)
+          </span>
+          <span id="topscore-mode-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">4º ESO (46)</span>
+        </div>
+        <div id="topscore-list" class="space-y-1 text-xs">
+          <!-- Renderizado dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Desglose de Récords Individuales -->
+      <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 text-left space-y-2 mb-4 text-xs">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+          <span class="text-emerald-400 font-bold flex items-center gap-1.5"><span>⚡</span> Más rápido:</span>
+          <span id="sum-fastest" class="font-mono font-semibold text-white">—</span>
+        </div>
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+          <span class="text-amber-400 font-bold flex items-center gap-1.5"><span>🐢</span> Más lento:</span>
+          <span id="sum-slowest" class="font-mono font-semibold text-white">—</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-rose-400 font-bold flex items-center gap-1.5"><span>🎯</span> Más intentos:</span>
+          <span id="sum-attempts" class="font-mono font-semibold text-white">—</span>
+        </div>
+      </div>
+
+      <button id="btn-play-again" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold text-sm shadow-lg shadow-cyan-950/50 transition active:scale-98">
+        <i class="fa-solid fa-rotate-right mr-1.5"></i> Preparar nueva partida
+      </button>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL DE AYUDA / INSTRUCCIONES
+       ===================================================================== -->
+  <div id="help-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl relative">
+      <button id="close-help-modal" class="absolute top-3.5 right-3.5 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h3 class="text-lg font-extrabold text-white mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-graduation-cap text-cyan-400"></i> Cómo jugar a QuimiTetris
+      </h3>
+      <ul class="space-y-2 text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+        <li class="flex gap-2"><span class="text-cyan-400 font-bold">1.</span> <span>A la izquierda caerán elementos químicos de arriba abajo por una de las <b>4 columnas</b> hasta apilarse en las <b>5 filas</b> (máx. 20 huecos).</span></li>
+        <li class="flex gap-2"><span class="text-cyan-400 font-bold">2.</span> <span><b>Arrastra y suelta</b> cada ficha (tanto mientras cae en el aire como ya apilada) en su casilla correcta de la Tabla Periódica. También puedes hacer clic en una ficha y luego en su casilla.</span></li>
+        <li class="flex gap-2"><span class="text-emerald-400 font-bold">3.</span> <span><b>Acierto:</b> Sumas <b>+10 puntos</b> (más bonus de rapidez). Haz clic en cualquier elemento ya colocado para estudiar su valencia y configuración electrónica.</span></li>
+        <li class="flex gap-2"><span class="text-rose-400 font-bold">4.</span> <span><b>Fallo:</b> Se resta <b>-1 punto</b> y el elemento viaja al primer hueco libre de la fila más baja disponible en la zona Tetris.</span></li>
+        <li class="flex gap-2"><span class="text-amber-400 font-bold">5.</span> <span>Puedes ajustar la <b>velocidad de caída</b> (Lento, Normal, Rápido), alternar entre <b>Modo Claro/Oscuro</b> y activar o silenciar la <b>melodía clásica Tetris</b>.</span></li>
+      </ul>
+      <button id="btn-close-help-ok" class="w-full py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs sm:text-sm transition">
+        ¡Entendido, a practicar!
+      </button>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       LÓGICA JAVASCRIPT COMPLETA (BASE DE DATOS IUPAC + MOTOR TETRIS + UX)
+       ===================================================================== -->
+  <script>
+    /**
+     * BASE DE DATOS RIGUROSA DE LOS 118 ELEMENTOS QUÍMICOS (IUPAC EN ESPAÑOL)
+     * Incluye: z (número atómico), sym (símbolo), name (nombre), group (1-18), period (1-7),
+     * gridCol y gridRow (posición exacta en cuadrícula CSS 18x9), cat (categoría química),
+     * mass (masa atómica), config (configuración electrónica), ox (estados oxidación 4º ESO),
+     * use (aplicación didáctica) y eso (boolean: si entra en el temario habitual de 4º ESO).
+     */
+    const CATEGORIES = {
+      'alcalino': { label: 'Alcalinos', css: 'cat-alcalino', hint: 'hint-alcalino', color: '#ef4444' },
+      'alcalinoterreo': { label: 'Alcalinotérreos', css: 'cat-alcalinoterreo', hint: 'hint-alcalinoterreo', color: '#f97316' },
+      'transicion': { label: 'Metales transición', css: 'cat-transicion', hint: 'hint-transicion', color: '#eab308' },
+      'otros-metales': { label: 'Otros metales', css: 'cat-otros-metales', hint: 'hint-otros-metales', color: '#10b981' },
+      'metaloide': { label: 'Metaloides', css: 'cat-metaloide', hint: 'hint-metaloide', color: '#06b6d4' },
+      'no-metal': { label: 'No metales', css: 'cat-no-metal', hint: 'hint-no-metal', color: '#3b82f6' },
+      'halogeno': { label: 'Halógenos', css: 'cat-halogeno', hint: 'hint-halogeno', color: '#6366f1' },
+      'gas-noble': { label: 'Gases nobles', css: 'cat-gas-noble', hint: 'hint-gas-noble', color: '#a855f7' },
+      'lantanido': { label: 'Lantánidos', css: 'cat-lantanido', hint: 'hint-lantanido', color: '#ec4899' },
+      'actinido': { label: 'Actínidos', css: 'cat-actinido', hint: 'hint-actinido', color: '#f43f5e' }
+    };
+
+    const ELEMENTS_DB = [
+      // Periodo 1
+      { z: 1, sym: 'H', name: 'Hidrógeno', group: 1, period: 1, col: 1, row: 1, cat: 'no-metal', mass: '1,008', config: '1s¹', ox: '+1, -1', use: 'Elemento más abundante del universo; forma el agua (H₂O) y ácidos.', eso: true },
+      { z: 2, sym: 'He', name: 'Helio', group: 18, period: 1, col: 18, row: 1, cat: 'gas-noble', mass: '4,003', config: '1s²', ox: '0', use: 'Gas noble muy ligero usado en globos aerostáticos y resonancias magnéticas.', eso: true },
+
+      // Periodo 2
+      { z: 3, sym: 'Li', name: 'Litio', group: 1, period: 2, col: 1, row: 2, cat: 'alcalino', mass: '6,94', config: '[He] 2s¹', ox: '+1', use: 'Metal más ligero; imprescindible en baterías recargables de móviles y coches.', eso: true },
+      { z: 4, sym: 'Be', name: 'Berilio', group: 2, period: 2, col: 2, row: 2, cat: 'alcalinoterreo', mass: '9,012', config: '[He] 2s²', ox: '+2', use: 'Utilizado en aleaciones aeroespaciales y ventanas de rayos X.', eso: true },
+      { z: 5, sym: 'B', name: 'Boro', group: 13, period: 2, col: 13, row: 2, cat: 'metaloide', mass: '10,81', config: '[He] 2s² 2p¹', ox: '+3', use: 'Presente en vidrio borosilicatado (Pyrex) de laboratorio y detergentes.', eso: true },
+      { z: 6, sym: 'C', name: 'Carbono', group: 14, period: 2, col: 14, row: 2, cat: 'no-metal', mass: '12,011', config: '[He] 2s² 2p²', ox: '+2, +4, -4', use: 'Base de toda la química orgánica y la vida; forma el diamante y el grafito.', eso: true },
+      { z: 7, sym: 'N', name: 'Nitrógeno', group: 15, period: 2, col: 15, row: 2, cat: 'no-metal', mass: '14,007', config: '[He] 2s² 2p³', ox: '-3, +1, +2, +3, +4, +5', use: 'Constituye el 78% del aire atmosférico y es esencial en proteínas y fertilizantes.', eso: true },
+      { z: 8, sym: 'O', name: 'Oxígeno', group: 16, period: 2, col: 16, row: 2, cat: 'no-metal', mass: '15,999', config: '[He] 2s² 2p⁴', ox: '-2', use: 'Vital para la respiración celular y la combustión; 21% de la atmósfera.', eso: true },
+      { z: 9, sym: 'F', name: 'Flúor', group: 17, period: 2, col: 17, row: 2, cat: 'halogeno', mass: '18,998', config: '[He] 2s² 2p⁵', ox: '-1', use: 'El elemento más electronegativo; se añade a pastas dentífricas contra la caries.', eso: true },
+      { z: 10, sym: 'Ne', name: 'Neón', group: 18, period: 2, col: 18, row: 2, cat: 'gas-noble', mass: '20,180', config: '[He] 2s² 2p⁶', ox: '0', use: 'Emite una luz rojo-anaranjada intensa en rótulos luminosos y láseres.', eso: true },
+
+      // Periodo 3
+      { z: 11, sym: 'Na', name: 'Sodio', group: 1, period: 3, col: 1, row: 3, cat: 'alcalino', mass: '22,990', config: '[Ne] 3s¹', ox: '+1', use: 'Forma la sal común (NaCl) y es clave en la transmisión del impulso nervioso.', eso: true },
+      { z: 12, sym: 'Mg', name: 'Magnesio', group: 2, period: 3, col: 2, row: 3, cat: 'alcalinoterreo', mass: '24,305', config: '[Ne] 3s²', ox: '+2', use: 'Presente en la clorofila de las plantas y en aleaciones ligeras.', eso: true },
+      { z: 13, sym: 'Al', name: 'Aluminio', group: 13, period: 3, col: 13, row: 3, cat: 'otros-metales', mass: '26,982', config: '[Ne] 3s² 3p¹', ox: '+3', use: 'Metal ligero y resistente a la corrosión usado en envases, aviones y ventanas.', eso: true },
+      { z: 14, sym: 'Si', name: 'Silicio', group: 14, period: 3, col: 14, row: 3, cat: 'metaloide', mass: '28,085', config: '[Ne] 3s² 3p²', ox: '+4, -4', use: 'Semiconductor fundamental para fabricar microchips, paneles solares y vidrio.', eso: true },
+      { z: 15, sym: 'P', name: 'Fósforo', group: 15, period: 3, col: 15, row: 3, cat: 'no-metal', mass: '30,974', config: '[Ne] 3s² 3p³', ox: '-3, +3, +5', use: 'Forma parte del ADN, los huesos y las cerillas.', eso: true },
+      { z: 16, sym: 'S', name: 'Azufre', group: 16, period: 3, col: 16, row: 3, cat: 'no-metal', mass: '32,06', config: '[Ne] 3s² 3p⁴', ox: '-2, +2, +4, +6', use: 'Utilizado para fabricar ácido sulfúrico, pólvora y vulcanizar caucho.', eso: true },
+      { z: 17, sym: 'Cl', name: 'Cloro', group: 17, period: 3, col: 17, row: 3, cat: 'halogeno', mass: '35,45', config: '[Ne] 3s² 3p⁵', ox: '-1, +1, +3, +5, +7', use: 'Desinfectante habitual del agua potable y piscinas; forma el PVC.', eso: true },
+      { z: 18, sym: 'Ar', name: 'Argón', group: 18, period: 3, col: 18, row: 3, cat: 'gas-noble', mass: '39,948', config: '[Ne] 3s² 3p⁶', ox: '0', use: 'Gas inerte que rellena bombillas incandescentes y protege soldaduras.', eso: true },
+
+      // Periodo 4
+      { z: 19, sym: 'K', name: 'Potasio', group: 1, period: 4, col: 1, row: 4, cat: 'alcalino', mass: '39,098', config: '[Ar] 4s¹', ox: '+1', use: 'Esencial en fertilizantes agrícolas y en el funcionamiento muscular.', eso: true },
+      { z: 20, sym: 'Ca', name: 'Calcio', group: 2, period: 4, col: 2, row: 4, cat: 'alcalinoterreo', mass: '40,078', config: '[Ar] 4s²', ox: '+2', use: 'Componente estructural de huesos, dientes, mármol y cemento.', eso: true },
+      { z: 21, sym: 'Sc', name: 'Escandio', group: 3, period: 4, col: 3, row: 4, cat: 'transicion', mass: '44,956', config: '[Ar] 3d¹ 4s²', ox: '+3', use: 'Aleaciones ultraligeras para bicicletas de competición y lámparas de estadio.', eso: false },
+      { z: 22, sym: 'Ti', name: 'Titanio', group: 4, period: 4, col: 4, row: 4, cat: 'transicion', mass: '47,867', config: '[Ar] 3d² 4s²', ox: '+2, +3, +4', use: 'Biocompatible y muy resistente; se usa en prótesis médicas y aeronáutica.', eso: false },
+      { z: 23, sym: 'V', name: 'Vanadio', group: 5, period: 4, col: 5, row: 4, cat: 'transicion', mass: '50,942', config: '[Ar] 3d³ 4s²', ox: '+2, +3, +4, +5', use: 'Endurece el acero utilizado en herramientas y ejes de vehículos.', eso: false },
+      { z: 24, sym: 'Cr', name: 'Cromo', group: 6, period: 4, col: 6, row: 4, cat: 'transicion', mass: '51,996', config: '[Ar] 3d⁵ 4s¹', ox: '+2, +3, +6', use: 'Da brillo y resistencia a la oxidación al acero inoxidable y cromados.', eso: true },
+      { z: 25, sym: 'Mn', name: 'Manganeso', group: 7, period: 4, col: 7, row: 4, cat: 'transicion', mass: '54,938', config: '[Ar] 3d⁵ 4s²', ox: '+2, +3, +4, +6, +7', use: 'Imprescindible en la metalurgia del acero y en pilas alcalinas.', eso: true },
+      { z: 26, sym: 'Fe', name: 'Hierro', group: 8, period: 4, col: 8, row: 4, cat: 'transicion', mass: '55,845', config: '[Ar] 3d⁶ 4s²', ox: '+2, +3', use: 'Metal más utilizado en construcción (acero) y transporta oxígeno en la hemoglobina.', eso: true },
+      { z: 27, sym: 'Co', name: 'Cobalto', group: 9, period: 4, col: 9, row: 4, cat: 'transicion', mass: '58,933', config: '[Ar] 3d⁷ 4s²', ox: '+2, +3', use: 'Usado en imanes potentes, baterías de ion-litio y pigmentos azul cobalto.', eso: true },
+      { z: 28, sym: 'Ni', name: 'Níquel', group: 10, period: 4, col: 10, row: 4, cat: 'transicion', mass: '58,693', config: '[Ar] 3d⁸ 4s²', ox: '+2, +3', use: 'Presente en monedas, acero inoxidable y baterías recargables.', eso: true },
+      { z: 29, sym: 'Cu', name: 'Cobre', group: 11, period: 4, col: 11, row: 4, cat: 'transicion', mass: '63,546', config: '[Ar] 3d¹⁰ 4s¹', ox: '+1, +2', use: 'Excelente conductor eléctrico usado en cables, tuberías y aleaciones (bronce, latón).', eso: true },
+      { z: 30, sym: 'Zn', name: 'Zinc', group: 12, period: 4, col: 12, row: 4, cat: 'transicion', mass: '65,38', config: '[Ar] 3d¹⁰ 4s²', ox: '+2', use: 'Protege el hierro contra la corrosión (galvanizado) y forma el latón.', eso: true },
+      { z: 31, sym: 'Ga', name: 'Galio', group: 13, period: 4, col: 13, row: 4, cat: 'otros-metales', mass: '69,723', config: '[Ar] 3d¹⁰ 4s² 4p¹', ox: '+3', use: 'Se funde en la palma de la mano (29,8 °C); usado en diodos LED y semiconductores.', eso: false },
+      { z: 32, sym: 'Ge', name: 'Germanio', group: 14, period: 4, col: 14, row: 4, cat: 'metaloide', mass: '72,630', config: '[Ar] 3d¹⁰ 4s² 4p²', ox: '+2, +4', use: 'Semiconductor utilizado en fibra óptica y lentes de visión infrarroja.', eso: true },
+      { z: 33, sym: 'As', name: 'Arsénico', group: 15, period: 4, col: 15, row: 4, cat: 'metaloide', mass: '74,922', config: '[Ar] 3d¹⁰ 4s² 4p³', ox: '-3, +3, +5', use: 'Metaloide tóxico empleado en dopaje de semiconductores (arseniuro de galio).', eso: true },
+      { z: 34, sym: 'Se', name: 'Selenio', group: 16, period: 4, col: 16, row: 4, cat: 'no-metal', mass: '78,971', config: '[Ar] 3d¹⁰ 4s² 4p⁴', ox: '-2, +2, +4, +6', use: 'Oligoelemento antioxidante usado en fotocélulas y champús anticaspa.', eso: true },
+      { z: 35, sym: 'Br', name: 'Bromo', group: 17, period: 4, col: 17, row: 4, cat: 'halogeno', mass: '79,904', config: '[Ar] 3d¹⁰ 4s² 4p⁵', ox: '-1, +1, +3, +5, +7', use: 'Único no metal líquido a temperatura ambiente; usado en retardantes de llama.', eso: true },
+      { z: 36, sym: 'Kr', name: 'Kriptón', group: 18, period: 4, col: 18, row: 4, cat: 'gas-noble', mass: '83,798', config: '[Ar] 3d¹⁰ 4s² 4p⁶', ox: '0', use: 'Utilizado en flashes fotográficos de alta velocidad y ventanas aislantes.', eso: true },
+
+      // Periodo 5
+      { z: 37, sym: 'Rb', name: 'Rubidio', group: 1, period: 5, col: 1, row: 5, cat: 'alcalino', mass: '85,468', config: '[Kr] 5s¹', ox: '+1', use: 'Metal alcalino muy reactivo usado en relojes atómicos y células fotoeléctricas.', eso: true },
+      { z: 38, sym: 'Sr', name: 'Estroncio', group: 2, period: 5, col: 2, row: 5, cat: 'alcalinoterreo', mass: '87,62', config: '[Kr] 5s²', ox: '+2', use: 'Produce el brillante color rojo carmesí en los fuegos artificiales.', eso: true },
+      { z: 39, sym: 'Y', name: 'Itrio', group: 3, period: 5, col: 3, row: 5, cat: 'transicion', mass: '88,906', config: '[Kr] 4d¹ 5s²', ox: '+3', use: 'Presente en láseres (YAG), superconductores y pantallas LED.', eso: false },
+      { z: 40, sym: 'Zr', name: 'Circonio', group: 4, period: 5, col: 4, row: 5, cat: 'transicion', mass: '91,224', config: '[Kr] 4d² 5s²', ox: '+4', use: 'Muy resistente al calor y la corrosión; se usa en reactores nucleares y joyería (circonita).', eso: false },
+      { z: 41, sym: 'Nb', name: 'Niobio', group: 5, period: 5, col: 5, row: 5, cat: 'transicion', mass: '92,906', config: '[Kr] 4d⁴ 5s¹', ox: '+3, +5', use: 'Utilizado en imanes superconductores de aceleradores de partículas.', eso: false },
+      { z: 42, sym: 'Mo', name: 'Molibdeno', group: 6, period: 5, col: 6, row: 5, cat: 'transicion', mass: '95,95', config: '[Kr] 4d⁵ 5s¹', ox: '+2, +3, +4, +5, +6', use: 'Aumenta la resistencia térmica del acero en motores y turbinas.', eso: false },
+      { z: 43, sym: 'Tc', name: 'Tecnecio', group: 7, period: 5, col: 7, row: 5, cat: 'transicion', mass: '(98)', config: '[Kr] 4d⁵ 5s²', ox: '+4, +7', use: 'Primer elemento obtenido artificialmente; radiotrazador en medicina nuclear.', eso: false },
+      { z: 44, sym: 'Ru', name: 'Rutenio', group: 8, period: 5, col: 8, row: 5, cat: 'transicion', mass: '101,07', config: '[Kr] 4d⁷ 5s¹', ox: '+2, +3, +4, +6, +8', use: 'Catalizador químico y endurecedor de aleaciones de platino.', eso: false },
+      { z: 45, sym: 'Rh', name: 'Rodio', group: 9, period: 5, col: 9, row: 5, cat: 'transicion', mass: '102,91', config: '[Kr] 4d⁸ 5s¹', ox: '+3', use: 'Metal precioso clave en los catalizadores de automóviles para reducir gases tóxicos.', eso: false },
+      { z: 46, sym: 'Pd', name: 'Paladio', group: 10, period: 5, col: 10, row: 5, cat: 'transicion', mass: '106,42', config: '[Kr] 4d¹⁰', ox: '+2, +4', use: 'Absorbe grandes cantidades de hidrógeno; usado en catalizadores y electrónica.', eso: false },
+      { z: 47, sym: 'Ag', name: 'Plata', group: 11, period: 5, col: 11, row: 5, cat: 'transicion', mass: '107,87', config: '[Kr] 4d¹⁰ 5s¹', ox: '+1', use: 'El mejor conductor eléctrico y térmico; usado en joyería, espejos y electrónica.', eso: true },
+      { z: 48, sym: 'Cd', name: 'Cadmio', group: 12, period: 5, col: 12, row: 5, cat: 'transicion', mass: '112,41', config: '[Kr] 4d¹⁰ 5s²', ox: '+2', use: 'Antiguamente usado en baterías Ni-Cd y pigmentos amarillos.', eso: false },
+      { z: 49, sym: 'In', name: 'Indio', group: 13, period: 5, col: 13, row: 5, cat: 'otros-metales', mass: '114,82', config: '[Kr] 4d¹⁰ 5s² 5p¹', ox: '+3', use: 'Forma el óxido de indio y estaño (ITO) transparente de las pantallas táctiles.', eso: false },
+      { z: 50, sym: 'Sn', name: 'Estaño', group: 14, period: 5, col: 14, row: 5, cat: 'otros-metales', mass: '118,71', config: '[Kr] 4d¹⁰ 5s² 5p²', ox: '+2, +4', use: 'Usado en soldadura electrónica, hojalata y unido al cobre forma el bronce.', eso: true },
+      { z: 51, sym: 'Sb', name: 'Antimonio', group: 15, period: 5, col: 15, row: 5, cat: 'metaloide', mass: '121,76', config: '[Kr] 4d¹⁰ 5s² 5p³', ox: '-3, +3, +5', use: 'Endurece el plomo en baterías y se usa en materiales ignífugos.', eso: true },
+      { z: 52, sym: 'Te', name: 'Telurio', group: 16, period: 5, col: 16, row: 5, cat: 'metaloide', mass: '127,60', config: '[Kr] 4d¹⁰ 5s² 5p⁴', ox: '-2, +2, +4, +6', use: 'Utilizado en paneles solares de capa fina y discos ópticos regrabables.', eso: true },
+      { z: 53, sym: 'I', name: 'Yodo', group: 17, period: 5, col: 17, row: 5, cat: 'halogeno', mass: '126,90', config: '[Kr] 4d¹⁰ 5s² 5p⁵', ox: '-1, +1, +3, +5, +7', use: 'Antiséptico (povidona yodada) y esencial para las hormonas de la glándula tiroides.', eso: true },
+      { z: 54, sym: 'Xe', name: 'Xenón', group: 18, period: 5, col: 18, row: 5, cat: 'gas-noble', mass: '131,29', config: '[Kr] 4d¹⁰ 5s² 5p⁶', ox: '0', use: 'Usado en faros de automóviles de alta intensidad y propulsión iónica espacial.', eso: true },
+
+      // Periodo 6
+      { z: 55, sym: 'Cs', name: 'Cesio', group: 1, period: 6, col: 1, row: 6, cat: 'alcalino', mass: '132,91', config: '[Xe] 6s¹', ox: '+1', use: 'Define el segundo en los relojes atómicos de máxima precisión.', eso: true },
+      { z: 56, sym: 'Ba', name: 'Bario', group: 2, period: 6, col: 2, row: 6, cat: 'alcalinoterreo', mass: '137,33', config: '[Xe] 6s²', ox: '+2', use: 'El sulfato de bario se emplea como contraste en radiografías digestivas.', eso: true },
+
+      // Lantánidos (Periodo 6, fila visual 9)
+      { z: 57, sym: 'La', name: 'Lantano', group: 3, period: 6, col: 4, row: 9, cat: 'lantanido', mass: '138,91', config: '[Xe] 5d¹ 6s²', ox: '+3', use: 'Usado en lentes de cámaras fotográficas de alta calidad y baterías híbridas.', eso: false },
+      { z: 58, sym: 'Ce', name: 'Cerio', group: 3, period: 6, col: 5, row: 9, cat: 'lantanido', mass: '140,12', config: '[Xe] 4f¹ 5d¹ 6s²', ox: '+3, +4', use: 'El lantánido más abundante; usado en piedras de mechero y pulido de vidrio.', eso: false },
+      { z: 59, sym: 'Pr', name: 'Praseodimio', group: 3, period: 6, col: 6, row: 9, cat: 'lantanido', mass: '140,91', config: '[Xe] 4f³ 6s²', ox: '+3', use: 'Colorea de amarillo verdoso vidrios protectores de soldadura.', eso: false },
+      { z: 60, sym: 'Nd', name: 'Neodimio', group: 3, period: 6, col: 7, row: 9, cat: 'lantanido', mass: '144,24', config: '[Xe] 4f⁴ 6s²', ox: '+3', use: 'Fabrica los imanes permanentes más potentes (auriculares, aerogeneradores).', eso: false },
+      { z: 61, sym: 'Pm', name: 'Prometio', group: 3, period: 6, col: 8, row: 9, cat: 'lantanido', mass: '(145)', config: '[Xe] 4f⁵ 6s²', ox: '+3', use: 'Elemento radiactivo usado en baterías nucleares miniaturizadas.', eso: false },
+      { z: 62, sym: 'Sm', name: 'Samario', group: 3, period: 6, col: 9, row: 9, cat: 'lantanido', mass: '150,36', config: '[Xe] 4f⁶ 6s²', ox: '+2, +3', use: 'Imanes resistentes a altas temperaturas y tratamiento contra el cáncer.', eso: false },
+      { z: 63, sym: 'Eu', name: 'Europio', group: 3, period: 6, col: 10, row: 9, cat: 'lantanido', mass: '151,96', config: '[Xe] 4f⁷ 6s²', ox: '+2, +3', use: 'Fósforo rojo y azul en pantallas y tintas fluorescentes de seguridad en billetes de euro.', eso: false },
+      { z: 64, sym: 'Gd', name: 'Gadolinio', group: 3, period: 6, col: 11, row: 9, cat: 'lantanido', mass: '157,25', config: '[Xe] 4f⁷ 5d¹ 6s²', ox: '+3', use: 'Agente de contraste intravenoso en resonancias magnéticas médicas.', eso: false },
+      { z: 65, sym: 'Tb', name: 'Terbio', group: 3, period: 6, col: 12, row: 9, cat: 'lantanido', mass: '158,93', config: '[Xe] 4f⁹ 6s²', ox: '+3', use: 'Emite luminiscencia verde en pantallas y lámparas fluorescentes.', eso: false },
+      { z: 66, sym: 'Dy', name: 'Disprosio', group: 3, period: 6, col: 13, row: 9, cat: 'lantanido', mass: '162,50', config: '[Xe] 4f¹⁰ 6s²', ox: '+3', use: 'Mejora la resistencia térmica de los imanes de neodimio en coches eléctricos.', eso: false },
+      { z: 67, sym: 'Ho', name: 'Holmio', group: 3, period: 6, col: 14, row: 9, cat: 'lantanido', mass: '164,93', config: '[Xe] 4f¹¹ 6s²', ox: '+3', use: 'Tiene el mayor momento magnético natural; usado en láseres quirúrgicos.', eso: false },
+      { z: 68, sym: 'Er', name: 'Erbio', group: 3, period: 6, col: 15, row: 9, cat: 'lantanido', mass: '167,26', config: '[Xe] 4f¹² 6s²', ox: '+3', use: 'Amplifica la señal luminosa en cables de fibra óptica de telecomunicaciones.', eso: false },
+      { z: 69, sym: 'Tm', name: 'Tulio', group: 3, period: 6, col: 16, row: 9, cat: 'lantanido', mass: '168,93', config: '[Xe] 4f¹³ 6s²', ox: '+3', use: 'Fuente portátil de rayos X y láseres médicos de precisión.', eso: false },
+      { z: 70, sym: 'Yb', name: 'Iterbio', group: 3, period: 6, col: 17, row: 9, cat: 'lantanido', mass: '173,05', config: '[Xe] 4f¹⁴ 6s²', ox: '+2, +3', use: 'Utilizado en relojes atómicos ópticos y fibras láser industriales.', eso: false },
+      { z: 71, sym: 'Lu', name: 'Lutecio', group: 3, period: 6, col: 18, row: 9, cat: 'lantanido', mass: '174,97', config: '[Xe] 4f¹⁴ 5d¹ 6s²', ox: '+3', use: 'Detectores de tomografía por emisión de positrones (PET) y catalizadores.', eso: false },
+
+      // Resto Periodo 6
+      { z: 72, sym: 'Hf', name: 'Hafnio', group: 4, period: 6, col: 4, row: 6, cat: 'transicion', mass: '178,49', config: '[Xe] 4f¹⁴ 5d² 6s²', ox: '+4', use: 'Barras de control en submarinos nucleares por su capacidad de absorber neutrones.', eso: false },
+      { z: 73, sym: 'Ta', name: 'Tántalo', group: 5, period: 6, col: 5, row: 6, cat: 'transicion', mass: '180,95', config: '[Xe] 4f¹⁴ 5d³ 6s²', ox: '+5', use: 'Condensadores miniaturizados en teléfonos móviles (mineral coltán).', eso: false },
+      { z: 74, sym: 'W', name: 'Wolframio', group: 6, period: 6, col: 6, row: 6, cat: 'transicion', mass: '183,84', config: '[Xe] 4f¹⁴ 5d⁴ 6s²', ox: '+2, +3, +4, +5, +6', use: 'Tiene el punto de fusión más alto de todos los metales (3422 °C); filamentos de bombilla.', eso: false },
+      { z: 75, sym: 'Re', name: 'Renio', group: 7, period: 6, col: 7, row: 6, cat: 'transicion', mass: '186,21', config: '[Xe] 4f¹⁴ 5d⁵ 6s²', ox: '+4, +6, +7', use: 'Superaleaciones para álabes de turbinas de aviones a reacción.', eso: false },
+      { z: 76, sym: 'Os', name: 'Osmio', group: 8, period: 6, col: 8, row: 6, cat: 'transicion', mass: '190,23', config: '[Xe] 4f¹⁴ 5d⁶ 6s²', ox: '+3, +4, +6, +8', use: 'El elemento natural más denso (22,59 g/cm³); puntas de plumas estilográficas.', eso: false },
+      { z: 77, sym: 'Ir', name: 'Iridio', group: 9, period: 6, col: 9, row: 6, cat: 'transicion', mass: '192,22', config: '[Xe] 4f¹⁴ 5d⁷ 6s²', ox: '+3, +4', use: 'Muy resistente a la corrosión; su capa en rocas marca el impacto del meteorito de los dinosaurios.', eso: false },
+      { z: 78, sym: 'Pt', name: 'Platino', group: 10, period: 6, col: 10, row: 6, cat: 'transicion', mass: '195,08', config: '[Xe] 4f¹⁴ 5d⁹ 6s¹', ox: '+2, +4', use: 'Metal noble usado en joyería, catalizadores y fármacos antitumorales (cisplatino).', eso: true },
+      { z: 79, sym: 'Au', name: 'Oro', group: 11, period: 6, col: 11, row: 6, cat: 'transicion', mass: '196,97', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s¹', ox: '+1, +3', use: 'Inalterable y muy dúctil; empleado en joyería, reservas financieras y contactos electrónicos.', eso: true },
+      { z: 80, sym: 'Hg', name: 'Mercurio', group: 12, period: 6, col: 12, row: 6, cat: 'transicion', mass: '200,59', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s²', ox: '+1, +2', use: 'Único metal líquido a temperatura ambiente; antiguamente en termómetros y amalgamas.', eso: true },
+      { z: 81, sym: 'Tl', name: 'Talio', group: 13, period: 6, col: 13, row: 6, cat: 'otros-metales', mass: '204,38', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹', ox: '+1, +3', use: 'Metal muy tóxico utilizado en detectores de radiación gamma y óptica especial.', eso: false },
+      { z: 82, sym: 'Pb', name: 'Plomo', group: 14, period: 6, col: 14, row: 6, cat: 'otros-metales', mass: '207,2', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²', ox: '+2, +4', use: 'Metal denso y maleable usado en baterías de coche y blindajes contra rayos X.', eso: true },
+      { z: 83, sym: 'Bi', name: 'Bismuto', group: 15, period: 6, col: 15, row: 6, cat: 'otros-metales', mass: '208,98', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³', ox: '+3, +5', use: 'Forma cristales iridiscentes espectaculares y se usa en medicamentos digestivos.', eso: false },
+      { z: 84, sym: 'Po', name: 'Polonio', group: 16, period: 6, col: 16, row: 6, cat: 'otros-metales', mass: '(209)', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴', ox: '-2, +2, +4', use: 'Descubierto por Marie y Pierre Curie en 1898; altamente radiactivo.', eso: false },
+      { z: 85, sym: 'At', name: 'Astato', group: 17, period: 6, col: 17, row: 6, cat: 'halogeno', mass: '(210)', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵', ox: '-1, +1', use: 'El halógeno más escaso en la naturaleza; investigado en radioterapia dirigida.', eso: false },
+      { z: 86, sym: 'Rn', name: 'Radón', group: 18, period: 6, col: 18, row: 6, cat: 'gas-noble', mass: '(222)', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶', ox: '0', use: 'Gas noble radiactivo procedente de la desintegración natural del uranio en rocas.', eso: false },
+
+      // Periodo 7
+      { z: 87, sym: 'Fr', name: 'Francio', group: 1, period: 7, col: 1, row: 7, cat: 'alcalino', mass: '(223)', config: '[Rn] 7s¹', ox: '+1', use: 'Metal alcalino extremadamente radiactivo y efímero (vida media de 22 minutos).', eso: false },
+      { z: 88, sym: 'Ra', name: 'Radio', group: 2, period: 7, col: 2, row: 7, cat: 'alcalinoterreo', mass: '(226)', config: '[Rn] 7s²', ox: '+2', use: 'Aislado por Marie Curie; brilla con luminiscencia azul tenue por su radiactividad.', eso: false },
+
+      // Actínidos (Periodo 7, fila visual 10)
+      { z: 89, sym: 'Ac', name: 'Actinio', group: 3, period: 7, col: 4, row: 10, cat: 'actinido', mass: '(227)', config: '[Rn] 6d¹ 7s²', ox: '+3', use: 'Da nombre a la serie de los actínidos; fuente de neutrones y radioterapia.', eso: false },
+      { z: 90, sym: 'Th', name: 'Torio', group: 3, period: 7, col: 5, row: 10, cat: 'actinido', mass: '232,04', config: '[Rn] 6d² 7s²', ox: '+4', use: 'Combustible nuclear potencial y mantos de lámparas de gas de alta luminosidad.', eso: false },
+      { z: 91, sym: 'Pa', name: 'Protactinio', group: 3, period: 7, col: 6, row: 10, cat: 'actinido', mass: '231,04', config: '[Rn] 5f² 6d¹ 7s²', ox: '+4, +5', use: 'Elemento radiactivo muy escaso presente en menas de uranio.', eso: false },
+      { z: 92, sym: 'U', name: 'Uranio', group: 3, period: 7, col: 7, row: 10, cat: 'actinido', mass: '238,03', config: '[Rn] 5f³ 6d¹ 7s²', ox: '+3, +4, +5, +6', use: 'Combustible principal de las centrales nucleares de fisión (isótopo U-235).', eso: true },
+      { z: 93, sym: 'Np', name: 'Neptunio', group: 3, period: 7, col: 8, row: 10, cat: 'actinido', mass: '(237)', config: '[Rn] 5f⁴ 6d¹ 7s²', ox: '+3, +4, +5, +6', use: 'Primer elemento transuránido sintetizado artificialmente en 1940.', eso: false },
+      { z: 94, sym: 'Pu', name: 'Plutonio', group: 3, period: 7, col: 9, row: 10, cat: 'actinido', mass: '(244)', config: '[Rn] 5f⁶ 7s²', ox: '+3, +4, +5, +6', use: 'Combustible nuclear y fuente de energía térmica en sondas espaciales (Voyager, Perseverance).', eso: false },
+      { z: 95, sym: 'Am', name: 'Americio', group: 3, period: 7, col: 10, row: 10, cat: 'actinido', mass: '(243)', config: '[Rn] 5f⁷ 7s²', ox: '+3, +4', use: 'Utilizado en cantidades diminutas en detectores domésticos de humo por ionización.', eso: false },
+      { z: 96, sym: 'Cm', name: 'Curio', group: 3, period: 7, col: 11, row: 10, cat: 'actinido', mass: '(247)', config: '[Rn] 5f⁷ 6d¹ 7s²', ox: '+3', use: 'Nombrado en honor a Marie y Pierre Curie; usado en espectrómetros de rovers marcianos.', eso: false },
+      { z: 97, sym: 'Bk', name: 'Berkelio', group: 3, period: 7, col: 12, row: 10, cat: 'actinido', mass: '(247)', config: '[Rn] 5f⁹ 7s²', ox: '+3, +4', use: 'Sintetizado en Berkeley (California); usado para crear elementos aún más pesados.', eso: false },
+      { z: 98, sym: 'Cf', name: 'Californio', group: 3, period: 7, col: 13, row: 10, cat: 'actinido', mass: '(251)', config: '[Rn] 5f¹⁰ 7s²', ox: '+3', use: 'Emisor intenso de neutrones usado para iniciar reactores nucleares y analizar materiales.', eso: false },
+      { z: 99, sym: 'Es', name: 'Einstenio', group: 3, period: 7, col: 14, row: 10, cat: 'actinido', mass: '(252)', config: '[Rn] 5f¹¹ 7s²', ox: '+3', use: 'Nombrado en honor a Albert Einstein; elemento puramente de investigación.', eso: false },
+      { z: 100, sym: 'Fm', name: 'Fermio', group: 3, period: 7, col: 15, row: 10, cat: 'actinido', mass: '(257)', config: '[Rn] 5f¹² 7s²', ox: '+3', use: 'Nombrado en honor a Enrico Fermi; último elemento obtenible por bombardeo de neutrones.', eso: false },
+      { z: 101, sym: 'Md', name: 'Mendelevio', group: 3, period: 7, col: 16, row: 10, cat: 'actinido', mass: '(258)', config: '[Rn] 5f¹³ 7s²', ox: '+2, +3', use: 'Bautizado en honor a Dmitri Mendeléyev, creador de la Tabla Periódica.', eso: false },
+      { z: 102, sym: 'No', name: 'Nobelio', group: 3, period: 7, col: 17, row: 10, cat: 'actinido', mass: '(259)', config: '[Rn] 5f¹⁴ 7s²', ox: '+2, +3', use: 'Nombrado en honor a Alfred Nobel; vida media de pocos minutos.', eso: false },
+      { z: 103, sym: 'Lr', name: 'Lawrencio', group: 3, period: 7, col: 18, row: 10, cat: 'actinido', mass: '(266)', config: '[Rn] 5f¹⁴ 7s² 7p¹', ox: '+3', use: 'Último elemento de la serie de los actínidos; nombrado por Ernest Lawrence.', eso: false },
+
+      // Resto Periodo 7 (Elementos superpesados)
+      { z: 104, sym: 'Rf', name: 'Rutherfordio', group: 4, period: 7, col: 4, row: 7, cat: 'transicion', mass: '(267)', config: '[Rn] 5f¹⁴ 6d² 7s²', ox: '+4', use: 'Elemento sintético nombrado en honor a Ernest Rutherford.', eso: false },
+      { z: 105, sym: 'Db', name: 'Dubnio', group: 5, period: 7, col: 5, row: 7, cat: 'transicion', mass: '(268)', config: '[Rn] 5f¹⁴ 6d³ 7s²', ox: '+5', use: 'Elemento artificial nombrado por el centro de investigación de Dubná.', eso: false },
+      { z: 106, sym: 'Sg', name: 'Seaborgio', group: 6, period: 7, col: 6, row: 7, cat: 'transicion', mass: '(269)', config: '[Rn] 5f¹⁴ 6d⁴ 7s²', ox: '+6', use: 'Nombrado en honor a Glenn T. Seaborg, descubridor de numerosos actínidos.', eso: false },
+      { z: 107, sym: 'Bh', name: 'Bohrio', group: 7, period: 7, col: 7, row: 7, cat: 'transicion', mass: '(270)', config: '[Rn] 5f¹⁴ 6d⁵ 7s²', ox: '+7', use: 'Nombrado en honor al físico danés Niels Bohr y su modelo atómico.', eso: false },
+      { z: 108, sym: 'Hs', name: 'Hasio', group: 8, period: 7, col: 8, row: 7, cat: 'transicion', mass: '(269)', config: '[Rn] 5f¹⁴ 6d⁶ 7s²', ox: '+8', use: 'Sintetizado en Darmstadt (estado alemán de Hesse).', eso: false },
+      { z: 109, sym: 'Mt', name: 'Meitnerio', group: 9, period: 7, col: 9, row: 7, cat: 'transicion', mass: '(278)', config: '[Rn] 5f¹⁴ 6d⁷ 7s²', ox: '+3', use: 'Nombrado en honor a Lise Meitner, codescubridora de la fisión nuclear.', eso: false },
+      { z: 110, sym: 'Ds', name: 'Darmstadtio', group: 10, period: 7, col: 10, row: 7, cat: 'transicion', mass: '(281)', config: '[Rn] 5f¹⁴ 6d⁸ 7s²', ox: '+2, +4', use: 'Elemento superpesado sintético creado en Darmstadt, Alemania.', eso: false },
+      { z: 111, sym: 'Rg', name: 'Roentgenio', group: 11, period: 7, col: 11, row: 7, cat: 'transicion', mass: '(282)', config: '[Rn] 5f¹⁴ 6d⁹ 7s²', ox: '+3', use: 'Nombrado en honor a Wilhelm Röntgen, descubridor de los rayos X.', eso: false },
+      { z: 112, sym: 'Cn', name: 'Copernicio', group: 12, period: 7, col: 12, row: 7, cat: 'transicion', mass: '(285)', config: '[Rn] 5f¹⁴ 6d¹⁰ 7s²', ox: '+2', use: 'Nombrado en honor al astrónomo Nicolás Copérnico.', eso: false },
+      { z: 113, sym: 'Nh', name: 'Nihonio', group: 13, period: 7, col: 13, row: 7, cat: 'otros-metales', mass: '(286)', config: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p¹', ox: '+1, +3', use: 'Primer elemento sintetizado en Asia (Nihon = Japón en japonés).', eso: false },
+      { z: 114, sym: 'Fl', name: 'Flerovio', group: 14, period: 7, col: 14, row: 7, cat: 'otros-metales', mass: '(289)', config: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p²', ox: '+2', use: 'Elemento superpesado cercano a la teórica "isla de estabilidad" nuclear.', eso: false },
+      { z: 115, sym: 'Mc', name: 'Moscovio', group: 15, period: 7, col: 15, row: 7, cat: 'otros-metales', mass: '(290)', config: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p³', ox: '+1, +3', use: 'Nombrado por la región de Moscú; vida media de milisegundos.', eso: false },
+      { z: 116, sym: 'Lv', name: 'Livermorio', group: 16, period: 7, col: 16, row: 7, cat: 'otros-metales', mass: '(293)', config: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁴', ox: '+2, +4', use: 'Nombrado por el Laboratorio Nacional Lawrence Livermore (EE. UU.).', eso: false },
+      { z: 117, sym: 'Ts', name: 'Teneso', group: 17, period: 7, col: 17, row: 7, cat: 'halogeno', mass: '(294)', config: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁵', ox: '-1, +1', use: 'Segundo elemento más pesado conocido; nombrado por el estado de Tennessee.', eso: false },
+      { z: 118, sym: 'Og', name: 'Oganesón', group: 18, period: 7, col: 18, row: 7, cat: 'gas-noble', mass: '(294)', config: '[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶', ox: '0', use: 'Último elemento de la tabla periódica (Z=118); nombrado por Yuri Oganesián.', eso: false }
+    ];
+
+    /**
+     * NOTIFICACIONES TOAST NO INTRUSIVAS
+     */
+    function showToast(msg, type = 'info') {
+      const banner = document.getElementById('feedback-banner');
+      if (!banner) return;
+      const el = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-600/95 border-emerald-400 text-white',
+        error: 'bg-rose-600/95 border-rose-400 text-white',
+        warning: 'bg-amber-600/95 border-amber-400 text-white',
+        info: 'bg-slate-800/95 border-cyan-500 text-cyan-100'
+      };
+      el.className = `px-3 py-1.5 rounded-xl border text-xs font-bold shadow-xl backdrop-blur-md transition-all duration-300 transform translate-x-0 ${colors[type] || colors.info}`;
+      el.textContent = msg;
+      banner.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(12px)';
+        setTimeout(() => el.remove(), 300);
+      }, 2200);
+    }
+
+    /**
+     * MOTOR DE AUDIO WEB AUDIO API: EFECTOS DE SONIDO + MELODÍA CLÁSICA TETRIS (KOROBEINIKI)
+     */
+    class TetrisAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.musicTimer = null;
+        this.noteIndex = 0;
+
+        // Frecuencias de notas musicales (Hz)
+        const N = {
+          E5: 659.25, B4: 493.88, C5: 523.25, D5: 587.33,
+          A4: 440.00, Gs4: 415.30, E4: 329.63, F5: 698.46,
+          A5: 880.00, G5: 783.99, C4: 261.63, D4: 293.66,
+          G4: 392.00, F4: 349.23, REST: 0
+        };
+
+        // Melodía clásica Korobeiniki (frecuencia y duración en semicorcheas)
+        this.melody = [
+          [N.E5, 4], [N.B4, 2], [N.C5, 2], [N.D5, 4], [N.C5, 2], [N.B4, 2],
+          [N.A4, 4], [N.A4, 2], [N.C5, 2], [N.E5, 4], [N.D5, 2], [N.C5, 2],
+          [N.B4, 6], [N.C5, 2], [N.D5, 4], [N.E5, 4],
+          [N.C5, 4], [N.A4, 4], [N.A4, 4], [N.REST, 4],
+
+          [N.D5, 4], [N.F5, 2], [N.A5, 4], [N.G5, 2], [N.F5, 2],
+          [N.E5, 6], [N.C5, 2], [N.E5, 4], [N.D5, 2], [N.C5, 2],
+          [N.B4, 4], [N.B4, 2], [N.C5, 2], [N.D5, 4], [N.E5, 4],
+          [N.C5, 4], [N.A4, 4], [N.A4, 4], [N.REST, 4]
+        ];
+      }
+
+      initContext() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      }
+
+      toggle() {
+        this.enabled = !this.enabled;
+        if (!this.enabled) {
+          this.stopMusic();
+        } else if (gameState.running && !gameState.paused) {
+          this.startMusic();
+        }
+        return this.enabled;
+      }
+
+      playTone(freq, duration, type = 'triangle', volume = 0.08) {
+        if (!this.enabled || !freq) return;
+        this.initContext();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(volume, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      }
+
+      startMusic() {
+        if (!this.enabled || this.musicTimer) return;
+        this.initContext();
+        const stepMs = 135; // Tempo alegre tipo Game Boy
+        const playNext = () => {
+          if (!this.enabled || !gameState.running || gameState.paused) {
+            this.musicTimer = null;
+            return;
+          }
+          const [freq, units] = this.melody[this.noteIndex];
+          const durSec = (units * stepMs) / 1000;
+          if (freq > 0) {
+            this.playTone(freq, durSec * 0.85, 'square', 0.028);
+            this.playTone(freq / 2, durSec * 0.9, 'triangle', 0.032);
+          }
+          this.noteIndex = (this.noteIndex + 1) % this.melody.length;
+          this.musicTimer = setTimeout(playNext, units * stepMs);
+        };
+        playNext();
+      }
+
+      stopMusic() {
+        if (this.musicTimer) {
+          clearTimeout(this.musicTimer);
+          this.musicTimer = null;
+        }
+      }
+
+      sfxSuccess() {
+        this.playTone(523.25, 0.09, 'sine', 0.1);
+        setTimeout(() => this.playTone(659.25, 0.09, 'sine', 0.1), 70);
+        setTimeout(() => this.playTone(783.99, 0.18, 'sine', 0.11), 140);
+      }
+
+      sfxError() {
+        this.playTone(190, 0.14, 'sawtooth', 0.09);
+        setTimeout(() => this.playTone(145, 0.22, 'sawtooth', 0.09), 110);
+      }
+
+      sfxLand() {
+        this.playTone(130, 0.07, 'triangle', 0.06);
+      }
+
+      sfxWin() {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 0.22, 'triangle', 0.11), i * 110);
+        });
+      }
+    }
+
+    const audio = new TetrisAudioEngine();
+
+    /**
+     * ESTADO GLOBAL DEL JUEGO QUIMITETRIS
+     */
+    const SPEED_CONFIG = {
+      slow:   { fallSpeedPxPerSec: 28, spawnIntervalMs: 4200, maxFalling: 1 },
+      normal: { fallSpeedPxPerSec: 46, spawnIntervalMs: 3100, maxFalling: 2 },
+      fast:   { fallSpeedPxPerSec: 74, spawnIntervalMs: 2100, maxFalling: 2 }
+    };
+
+    const gameState = {
+      running: false,
+      paused: false,
+      difficulty: 'eso',       // 'eso' (46) | 'all' (118)
+      speedMode: 'normal',     // 'slow' | 'normal' | 'fast'
+      hintMode: 'both',        // 'both' | 'symbol-only' | 'name-only'
+      showAtomicNumber: false, // Oculto por defecto
+      showFamilyColors: true,  // Sombreado de familias en casillas vacías
+      score: 0,
+      elapsedSeconds: 0,
+      timerInterval: null,
+      rafId: null,
+      lastFrameTime: 0,
+      lastSpawnTime: 0,
+
+      // Mazo de elementos pendientes de salir (sin repeticiones)
+      deck: [],
+      // Conjunto de Z que ya han aparecido en la partida (garantiza unicidad absoluta)
+      spawnedZ: new Set(),
+      // Matriz 5 filas (0 arriba .. 4 abajo) x 4 columnas (0..3) de elementos apilados
+      board: Array.from({ length: 5 }, () => Array(4).fill(null)),
+      // Piezas actualmente cayendo: [{ id, element, col, yPx, spawnTimestamp }]
+      fallingPieces: [],
+      // Estadísticas por Z: { [z]: { attempts: 0, spawnTime: number, placeDuration: number } }
+      stats: {},
+      // Conjunto de Z ya colocados correctamente
+      placedZ: new Set(),
+
+      // Interacción Drag & Drop o Selección por clic
+      dragging: null,       // { sourceType: 'falling'|'board', idOrPos, element, pointerId }
+      selectedPiece: null   // { sourceType: 'falling'|'board', idOrPos, element }
+    };
+
+    // Referencias DOM principales
+    const dom = {
+      periodicTable: document.getElementById('periodic-table'),
+      tetrisGrid: document.getElementById('tetris-grid'),
+      fallingLayer: document.getElementById('falling-layer'),
+      tetrisContainer: document.getElementById('tetris-container'),
+      tetrisOverlay: document.getElementById('tetris-overlay'),
+      overlayTitle: document.getElementById('overlay-title'),
+      overlaySubtitle: document.getElementById('overlay-subtitle'),
+      btnOverlayStart: document.getElementById('btn-overlay-start'),
+      btnStartPause: document.getElementById('btn-start-pause'),
+      btnReset: document.getElementById('btn-reset'),
+      btnTheme: document.getElementById('btn-theme'),
+      themeIcon: document.getElementById('theme-icon'),
+      themeLabel: document.getElementById('theme-label'),
+      btnSound: document.getElementById('btn-sound'),
+      btnHelp: document.getElementById('btn-help'),
+      timerDisplay: document.getElementById('timer-display'),
+      scoreDisplay: document.getElementById('score-display'),
+      scoreDelta: document.getElementById('score-delta'),
+      queueCounter: document.getElementById('queue-counter'),
+      selectDifficulty: document.getElementById('select-difficulty'),
+      selectSpeed: document.getElementById('select-speed'),
+      selectHints: document.getElementById('select-hints'),
+      btnToggleZ: document.getElementById('btn-toggle-z'),
+      iconToggleZ: document.getElementById('icon-toggle-z'),
+      labelToggleZ: document.getElementById('label-toggle-z'),
+      btnToggleColors: document.getElementById('btn-toggle-colors'),
+      iconToggleColors: document.getElementById('icon-toggle-colors'),
+      labelToggleColors: document.getElementById('label-toggle-colors'),
+      placedCount: document.getElementById('placed-count'),
+      totalCount: document.getElementById('total-count'),
+      progressPercent: document.getElementById('progress-percent'),
+      progressBar: document.getElementById('progress-bar'),
+      statFastestVal: document.getElementById('stat-fastest-val'),
+      statFastestTime: document.getElementById('stat-fastest-time'),
+      statSlowestVal: document.getElementById('stat-slowest-val'),
+      statSlowestTime: document.getElementById('stat-slowest-time'),
+      statAttemptsVal: document.getElementById('stat-attempts-val'),
+      statAttemptsCount: document.getElementById('stat-attempts-count'),
+      legendBar: document.getElementById('legend-bar'),
+      dragGhost: document.getElementById('drag-ghost'),
+      ghostZ: document.getElementById('ghost-z'),
+      ghostSym: document.getElementById('ghost-sym'),
+      ghostName: document.getElementById('ghost-name')
+    };
+
+    /**
+     * CONSTRUCCIÓN DE LA TABLA PERIÓDICA Y LA CUADRÍCULA TETRIS 4x5
+     */
+    function buildPeriodicTable() {
+      // Eliminar celdas previas si se reconstruye
+      dom.periodicTable.querySelectorAll('.pt-cell').forEach(c => c.remove());
+
+      const targetSet = getActiveElementsList();
+      const targetZSet = new Set(targetSet.map(e => e.z));
+
+      ELEMENTS_DB.forEach(el => {
+        const cell = document.createElement('div');
+        cell.dataset.z = el.z;
+        cell.dataset.cat = el.cat;
+        cell.style.gridColumn = el.col;
+        cell.style.gridRow = el.row;
+
+        const isIncluded = targetZSet.has(el.z);
+        const isPlaced = gameState.placedZ.has(el.z);
+        const catInfo = CATEGORIES[el.cat];
+
+        cell.className = 'pt-cell rounded-md border flex flex-col items-center justify-center p-0.5 text-center transition-all duration-150 relative select-none overflow-hidden';
+
+        if (!isIncluded) {
+          // Elemento fuera del temario actual (mostrado tenue como referencia visual)
+          cell.classList.add('opacity-30', 'bg-slate-900/40', 'border-slate-800', 'text-slate-500');
+          cell.innerHTML = `<span class="text-[8px] font-mono leading-none">${el.z}</span><span class="text-[10px] sm:text-xs font-bold leading-tight">${el.sym}</span>`;
+        } else if (isPlaced) {
+          // Elemento ya colocado correctamente
+          cell.classList.add(catInfo.css, 'cursor-pointer', 'shadow-sm', 'hover:scale-105', 'hover:z-10');
+          cell.innerHTML = `
+            <span class="text-[8px] sm:text-[9px] font-mono font-bold leading-none opacity-90">${el.z}</span>
+            <span class="text-xs sm:text-sm font-extrabold leading-tight">${el.sym}</span>
+            <span class="hidden xl:block text-[7px] font-semibold truncate w-full leading-none opacity-90">${el.name}</span>
+          `;
+          cell.addEventListener('click', () => openElementModal(el));
+        } else {
+          // Casilla vacía pendiente de colocar
+          cell.style.backgroundColor = 'var(--cell-empty-bg)';
+          cell.style.borderColor = 'var(--cell-empty-border)';
+          if (gameState.showFamilyColors) {
+            cell.classList.add(catInfo.hint);
+          }
+          cell.classList.add('cursor-pointer', 'hover:border-cyan-400');
+
+          // Mostrar número atómico en casilla vacía solo si el interruptor Z está activado
+          const zLabel = gameState.showAtomicNumber
+            ? `<span class="text-[9px] sm:text-[10px] font-mono font-bold text-slate-400">${el.z}</span>`
+            : '';
+          cell.innerHTML = zLabel;
+
+          // Soporte para colocación por clic si hay una ficha seleccionada
+          cell.addEventListener('click', () => {
+            if (gameState.selectedPiece) {
+              attemptPlaceElement(gameState.selectedPiece, el.z, cell);
+            }
+          });
+        }
+
+        dom.periodicTable.appendChild(cell);
+      });
+    }
+
+    function buildLegend() {
+      dom.legendBar.innerHTML = '';
+      Object.entries(CATEGORIES).forEach(([key, info]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900/80 border border-slate-800 hover:border-slate-600 text-[9px] font-semibold text-slate-300 transition';
+        btn.innerHTML = `<span class="w-2 h-2 rounded-full inline-block" style="background:${info.color}"></span><span>${info.label}</span>`;
+        btn.addEventListener('mouseenter', () => {
+          dom.periodicTable.querySelectorAll('.pt-cell').forEach(c => {
+            if (c.dataset.cat !== key) c.classList.add('dimmed-cell');
+          });
+        });
+        btn.addEventListener('mouseleave', () => {
+          dom.periodicTable.querySelectorAll('.pt-cell').forEach(c => c.classList.remove('dimmed-cell'));
+        });
+        dom.legendBar.appendChild(btn);
+      });
+    }
+
+    function buildTetrisSlots() {
+      dom.tetrisGrid.innerHTML = '';
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 4; c++) {
+          const slot = document.createElement('div');
+          slot.dataset.row = r;
+          slot.dataset.col = c;
+          slot.style.backgroundColor = 'var(--bg-slot)';
+          slot.className = 'tetris-slot rounded-xl border border-dashed border-slate-700/70 flex items-center justify-center relative overflow-hidden';
+          dom.tetrisGrid.appendChild(slot);
+        }
+      }
+    }
+
+    function getActiveElementsList() {
+      return gameState.difficulty === 'eso'
+        ? ELEMENTS_DB.filter(e => e.eso)
+        : [...ELEMENTS_DB];
+    }
+
+    /**
+     * RENDERIZADO DE FICHAS (TANTO EN PILA COMO CAYENDO)
+     * Tipografía ampliada para aprovechar al máximo el espacio de cada ficha
+     */
+    function createPieceHTML(el) {
+      const mode = gameState.hintMode;
+      const zBadge = gameState.showAtomicNumber
+        ? `<span class="text-[10px] sm:text-xs font-mono font-extrabold leading-none opacity-95 tracking-tight">${el.z}</span>`
+        : '';
+
+      if (mode === 'symbol-only') {
+        return `
+          ${zBadge}
+          <span class="text-xl sm:text-2xl xl:text-3xl font-black leading-none tracking-tight">${el.sym}</span>
+        `;
+      }
+      if (mode === 'name-only') {
+        return `
+          ${zBadge}
+          <span class="text-xs sm:text-sm xl:text-base font-extrabold leading-tight px-1 text-center break-words">${el.name}</span>
+        `;
+      }
+      // Modo guiado: Símbolo y Nombre grandes aprovechando toda la ficha (+ Z opcional)
+      return `
+        ${zBadge}
+        <span class="text-lg sm:text-2xl xl:text-[26px] font-black leading-none tracking-tight">${el.sym}</span>
+        <span class="text-[11px] sm:text-xs xl:text-[13px] font-bold truncate w-full px-1 text-center leading-tight mt-0.5">${el.name}</span>
+      `;
+    }
+
+    function renderStackedBoard() {
+      const slots = dom.tetrisGrid.querySelectorAll('.tetris-slot');
+      let stackedCount = 0;
+
+      slots.forEach(slot => {
+        const r = Number(slot.dataset.row);
+        const c = Number(slot.dataset.col);
+        const item = gameState.board[r][c];
+        slot.innerHTML = '';
+
+        if (item) {
+          stackedCount++;
+          const el = item.element;
+          const catCss = CATEGORIES[el.cat].css;
+          const piece = document.createElement('div');
+          piece.className = `tetris-piece w-full h-full rounded-lg border-2 ${catCss} flex flex-col items-center justify-center cursor-grab active:cursor-grabbing shadow-md transition-transform hover:scale-[1.03]`;
+          if (item.justLanded) {
+            piece.classList.add('anim-land');
+            item.justLanded = false;
+          }
+          if (gameState.selectedPiece && gameState.selectedPiece.sourceType === 'board' && gameState.selectedPiece.idOrPos.r === r && gameState.selectedPiece.idOrPos.c === c) {
+            piece.classList.add('selected-piece');
+          }
+          piece.innerHTML = createPieceHTML(el);
+
+          attachPieceInteraction(piece, {
+            sourceType: 'board',
+            idOrPos: { r, c },
+            element: el
+          });
+
+          slot.appendChild(piece);
+        }
+      });
+
+      const totalOccupied = stackedCount + gameState.fallingPieces.length;
+      dom.queueCounter.textContent = `${totalOccupied} / 20`;
+      if (totalOccupied >= 16) {
+        dom.tetrisContainer.classList.add('tetris-danger');
+        dom.queueCounter.classList.add('text-rose-400', 'border-rose-600');
+      } else {
+        dom.tetrisContainer.classList.remove('tetris-danger');
+        dom.queueCounter.classList.remove('text-rose-400', 'border-rose-600');
+      }
+    }
+
+    /**
+     * INTERACCIÓN UNIVERSAL (POINTER DRAG & DROP + CLIC ACCESIBLE)
+     */
+    function attachPieceInteraction(node, payload) {
+      node.style.touchAction = 'none';
+
+      node.addEventListener('pointerdown', (e) => {
+        if (!gameState.running || gameState.paused) return;
+        if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        let hasMoved = false;
+        let lastHoveredCell = null;
+
+        // Preparar elemento fantasma flotante
+        const catCss = CATEGORIES[payload.element.cat].css;
+        dom.dragGhost.className = `w-16 h-16 sm:w-20 sm:h-20 rounded-xl border-2 ${catCss} flex flex-col items-center justify-center p-1 text-center`;
+        dom.ghostZ.textContent = payload.element.z;
+        dom.ghostZ.style.display = gameState.showAtomicNumber ? 'block' : 'none';
+        dom.ghostSym.textContent = payload.element.sym;
+        dom.ghostName.textContent = payload.element.name;
+
+        const onPointerMove = (moveEvt) => {
+          const dx = moveEvt.clientX - startX;
+          const dy = moveEvt.clientY - startY;
+
+          if (!hasMoved && Math.hypot(dx, dy) > 6) {
+            hasMoved = true;
+            gameState.dragging = payload;
+            node.style.opacity = '0.35';
+            dom.dragGhost.classList.remove('hidden');
+          }
+
+          if (hasMoved) {
+            dom.dragGhost.style.left = `${moveEvt.clientX}px`;
+            dom.dragGhost.style.top = `${moveEvt.clientY}px`;
+
+            // Detectar casilla de la tabla periódica bajo el puntero
+            const elemBelow = document.elementFromPoint(moveEvt.clientX, moveEvt.clientY);
+            const cell = elemBelow ? elemBelow.closest('.pt-cell') : null;
+
+            if (lastHoveredCell && lastHoveredCell !== cell) {
+              lastHoveredCell.classList.remove('drag-over');
+            }
+            if (cell && !gameState.placedZ.has(Number(cell.dataset.z))) {
+              cell.classList.add('drag-over');
+              lastHoveredCell = cell;
+            } else {
+              lastHoveredCell = null;
+            }
+          }
+        };
+
+        const onPointerUp = (upEvt) => {
+          window.removeEventListener('pointermove', onPointerMove);
+          window.removeEventListener('pointerup', onPointerUp);
+          window.removeEventListener('pointercancel', onPointerUp);
+
+          node.style.opacity = '1';
+          dom.dragGhost.classList.add('hidden');
+          if (lastHoveredCell) {
+            lastHoveredCell.classList.remove('drag-over');
+          }
+
+          if (hasMoved) {
+            gameState.dragging = null;
+            const elemBelow = document.elementFromPoint(upEvt.clientX, upEvt.clientY);
+            const cell = elemBelow ? elemBelow.closest('.pt-cell') : null;
+            if (cell && cell.dataset.z) {
+              attemptPlaceElement(payload, Number(cell.dataset.z), cell);
+            }
+          } else {
+            // Si fue un toque/clic sin arrastrar, alternar selección accesible
+            const isSame =
+              gameState.selectedPiece &&
+              gameState.selectedPiece.sourceType === payload.sourceType &&
+              JSON.stringify(gameState.selectedPiece.idOrPos) === JSON.stringify(payload.idOrPos);
+
+            gameState.selectedPiece = isSame ? null : payload;
+            renderStackedBoard();
+            renderFallingPieces();
+          }
+        };
+
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerUp);
+      });
+    }
+
+    function renderFallingPieces() {
+      const layerW = dom.fallingLayer.clientWidth;
+      const layerH = dom.fallingLayer.clientHeight;
+      if (!layerW || !layerH) return;
+
+      const gap = 6;
+      const colW = (layerW - gap * 3) / 4;
+      const rowH = (layerH - gap * 4) / 5;
+
+      // Sincronizar nodos DOM de las piezas que caen
+      const activeIds = new Set(gameState.fallingPieces.map(p => String(p.id)));
+      dom.fallingLayer.querySelectorAll('.falling-piece').forEach(node => {
+        if (!activeIds.has(node.dataset.fallId)) node.remove();
+      });
+
+      gameState.fallingPieces.forEach(fp => {
+        let node = dom.fallingLayer.querySelector(`[data-fall-id="${fp.id}"]`);
+        if (!node) {
+          const catCss = CATEGORIES[fp.element.cat].css;
+          node = document.createElement('div');
+          node.dataset.fallId = fp.id;
+          node.className = `tetris-piece falling-piece rounded-lg border-2 ${catCss} flex flex-col items-center justify-center cursor-grab active:cursor-grabbing shadow-xl`;
+          node.innerHTML = createPieceHTML(fp.element);
+
+          attachPieceInteraction(node, {
+            sourceType: 'falling',
+            idOrPos: fp.id,
+            element: fp.element
+          });
+
+          dom.fallingLayer.appendChild(node);
+        }
+
+        if (gameState.selectedPiece && gameState.selectedPiece.sourceType === 'falling' && gameState.selectedPiece.idOrPos === fp.id) {
+          node.classList.add('selected-piece');
+        } else {
+          node.classList.remove('selected-piece');
+        }
+
+        const leftPx = fp.col * (colW + gap);
+        node.style.width = `${colW}px`;
+        node.style.height = `${rowH}px`;
+        node.style.left = `${leftPx}px`;
+        node.style.top = `${fp.yPx}px`;
+      });
+    }
+
+    /**
+     * Aplica gravedad vertical en una columna de la pila Tetris:
+     * si se retira una ficha inferior, todas las que estaban encima descienden para ocupar el hueco.
+     */
+    function applyColumnGravity(col) {
+      const columnItems = [];
+      for (let r = 4; r >= 0; r--) {
+        if (gameState.board[r][col]) {
+          columnItems.push(gameState.board[r][col]);
+        }
+      }
+      for (let r = 4; r >= 0; r--) {
+        const idx = 4 - r;
+        if (idx < columnItems.length) {
+          const item = columnItems[idx];
+          // Si cambió de fila hacia abajo, activar animación de caída/asentamiento
+          if (gameState.board[r][col] !== item) {
+            item.justLanded = true;
+          }
+          gameState.board[r][col] = item;
+        } else {
+          gameState.board[r][col] = null;
+        }
+      }
+    }
+
+    /**
+     * LÓGICA DE COLOCACIÓN, ACIERTO, PENALIZACIÓN POR FALLO Y RETORNO A LA PILA
+     */
+    function removePieceFromSource(payload) {
+      if (payload.sourceType === 'falling') {
+        const idx = gameState.fallingPieces.findIndex(p => p.id === payload.idOrPos);
+        if (idx !== -1) {
+          gameState.fallingPieces.splice(idx, 1);
+          return true;
+        }
+      } else if (payload.sourceType === 'board') {
+        const { r, c } = payload.idOrPos;
+        if (gameState.board[r][c] && gameState.board[r][c].element.z === payload.element.z) {
+          gameState.board[r][c] = null;
+          applyColumnGravity(c);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Busca el primer hueco libre en la fila más baja disponible (fila 4 hacia fila 0)
+     */
+    function placeInFirstAvailableBottomSlot(element) {
+      for (let r = 4; r >= 0; r--) {
+        for (let c = 0; c < 4; c++) {
+          if (!gameState.board[r][c]) {
+            gameState.board[r][c] = { element, justLanded: true };
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function attemptPlaceElement(payload, targetZ, targetCell) {
+      const el = payload.element;
+      const activeZSet = new Set(getActiveElementsList().map(e => e.z));
+
+      if (!activeZSet.has(targetZ) || gameState.placedZ.has(targetZ)) {
+        return;
+      }
+
+      // Inicializar registro estadístico si no existía
+      if (!gameState.stats[el.z]) {
+        gameState.stats[el.z] = {
+          element: el,
+          attempts: 0,
+          spawnTime: performance.now(),
+          placeDuration: null
+        };
+      }
+
+      if (el.z === targetZ) {
+        // ¡ACIERTO!
+        removePieceFromSource(payload);
+        gameState.selectedPiece = null;
+        gameState.placedZ.add(el.z);
+
+        const now = performance.now();
+        const durationSec = Math.max(0.2, (now - gameState.stats[el.z].spawnTime) / 1000);
+        gameState.stats[el.z].attempts += 1;
+        gameState.stats[el.z].placeDuration = durationSec;
+
+        // Bonus por rapidez (hasta +5 pts extra si tarda menos de 5s)
+        const speedBonus = durationSec < 5 ? Math.ceil(5 - durationSec) : 0;
+        const pointsEarned = 10 + speedBonus;
+        updateScore(pointsEarned);
+
+        audio.sfxSuccess();
+        showToast(`¡Correcto! ${el.name} (${el.sym}) en ${durationSec.toFixed(1)}s (+${pointsEarned} pts)`, 'success');
+
+        buildPeriodicTable();
+        const newCell = dom.periodicTable.querySelector(`.pt-cell[data-z="${el.z}"]`);
+        if (newCell) newCell.classList.add('anim-success');
+
+        renderStackedBoard();
+        renderFallingPieces();
+        updateDashboardStats();
+
+        // Comprobar victoria
+        if (gameState.placedZ.size >= getActiveElementsList().length) {
+          endGame(true);
+        }
+      } else {
+        // ¡FALLO! Restar 1 punto y devolver al primer hueco de la primera fila disponible
+        gameState.stats[el.z].attempts += 1;
+        updateScore(-1);
+        audio.sfxError();
+
+        if (targetCell) {
+          targetCell.classList.remove('anim-error');
+          void targetCell.offsetWidth;
+          targetCell.classList.add('anim-error');
+        }
+
+        // Si estaba cayendo en el aire, lo retiramos del aire y lo enviamos al hueco libre inferior
+        if (payload.sourceType === 'falling') {
+          removePieceFromSource(payload);
+          const placed = placeInFirstAvailableBottomSlot(el);
+          if (!placed) {
+            endGame(false);
+            return;
+          }
+        }
+
+        gameState.selectedPiece = null;
+        const wrongEl = ELEMENTS_DB.find(item => item.z === targetZ);
+        showToast(`Fallo (-1 pt): Esa casilla es ${wrongEl ? wrongEl.name : ''}. ${el.sym} vuelve a la fila.`, 'error');
+
+        renderStackedBoard();
+        renderFallingPieces();
+        updateDashboardStats();
+      }
+    }
+
+    function updateScore(delta) {
+      gameState.score += delta;
+      dom.scoreDisplay.textContent = gameState.score;
+      dom.scoreDisplay.className = `font-mono text-base sm:text-lg font-bold tracking-wider ${gameState.score >= 0 ? 'text-emerald-500' : 'text-rose-500'}`;
+
+      dom.scoreDelta.textContent = delta > 0 ? `+${delta}` : `${delta}`;
+      dom.scoreDelta.className = `absolute right-1.5 top-0.5 text-[10px] font-extrabold transition-opacity duration-300 ${delta > 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      dom.scoreDelta.style.opacity = '1';
+      setTimeout(() => {
+        dom.scoreDelta.style.opacity = '0';
+      }, 900);
+    }
+
+    /**
+     * FÍSICA DE CAÍDA CONTINUA POR COLUMNAS (MOTOR TETRIS)
+     */
+    function getLowestAvailableRowInCol(col) {
+      for (let r = 4; r >= 0; r--) {
+        if (!gameState.board[r][col]) return r;
+      }
+      return -1; // Columna llena
+    }
+
+    function spawnFallingPiece() {
+      // Extraer del mazo descartando por seguridad cualquier elemento ya emitido o colocado
+      while (gameState.deck.length > 0) {
+        const candidate = gameState.deck[gameState.deck.length - 1];
+        if (gameState.spawnedZ.has(candidate.z) || gameState.placedZ.has(candidate.z)) {
+          gameState.deck.pop();
+        } else {
+          break;
+        }
+      }
+
+      if (gameState.deck.length === 0) return;
+
+      // Buscar columnas que tengan al menos un hueco libre y no tengan otra ficha recién salida arriba
+      const freeCols = [];
+      for (let c = 0; c < 4; c++) {
+        const targetRow = getLowestAvailableRowInCol(c);
+        const blockedTop = gameState.fallingPieces.some(fp => fp.col === c && fp.yPx < 48);
+        if (targetRow !== -1 && !blockedTop) {
+          freeCols.push(c);
+        }
+      }
+
+      if (freeCols.length === 0) {
+        // Comprobar si todo el tablero 4x5 está completamente lleno
+        const anyFree = [0, 1, 2, 3].some(c => getLowestAvailableRowInCol(c) !== -1);
+        if (!anyFree && gameState.fallingPieces.length === 0) {
+          endGame(false);
+        }
+        return;
+      }
+
+      const chosenCol = freeCols[Math.floor(Math.random() * freeCols.length)];
+      const nextElement = gameState.deck.pop();
+      gameState.spawnedZ.add(nextElement.z);
+      const id = `${nextElement.z}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+      if (!gameState.stats[nextElement.z]) {
+        gameState.stats[nextElement.z] = {
+          element: nextElement,
+          attempts: 0,
+          spawnTime: performance.now(),
+          placeDuration: null
+        };
+      }
+
+      gameState.fallingPieces.push({
+        id,
+        element: nextElement,
+        col: chosenCol,
+        yPx: -24
+      });
+
+      renderStackedBoard();
+      renderFallingPieces();
+    }
+
+    function gameLoop(timestamp) {
+      if (!gameState.running || gameState.paused) return;
+
+      if (!gameState.lastFrameTime) gameState.lastFrameTime = timestamp;
+      const dtSec = Math.min(0.1, (timestamp - gameState.lastFrameTime) / 1000);
+      gameState.lastFrameTime = timestamp;
+
+      const cfg = SPEED_CONFIG[gameState.speedMode] || SPEED_CONFIG.normal;
+
+      // Generación periódica de nuevas piezas
+      if (
+        gameState.deck.length > 0 &&
+        gameState.fallingPieces.length < cfg.maxFalling &&
+        (timestamp - gameState.lastSpawnTime >= cfg.spawnIntervalMs || gameState.fallingPieces.length === 0)
+      ) {
+        spawnFallingPiece();
+        gameState.lastSpawnTime = timestamp;
+      }
+
+      // Actualizar caída vertical de cada pieza activa
+      const layerH = dom.fallingLayer.clientHeight;
+      const gap = 6;
+      const rowH = (layerH - gap * 4) / 5;
+
+      for (let i = gameState.fallingPieces.length - 1; i >= 0; i--) {
+        const fp = gameState.fallingPieces[i];
+        const targetRow = getLowestAvailableRowInCol(fp.col);
+
+        if (targetRow === -1) {
+          // Si su columna se llenó mientras caía, reubicar en otra columna con hueco
+          const altCols = [0, 1, 2, 3].filter(c => getLowestAvailableRowInCol(c) !== -1);
+          if (altCols.length === 0) {
+            endGame(false);
+            return;
+          }
+          fp.col = altCols[0];
+          continue;
+        }
+
+        const targetYPx = targetRow * (rowH + gap);
+        fp.yPx += cfg.fallSpeedPxPerSec * dtSec;
+
+        if (fp.yPx >= targetYPx) {
+          // Aterriza en su hueco disponible más bajo
+          gameState.fallingPieces.splice(i, 1);
+          gameState.board[targetRow][fp.col] = { element: fp.element, justLanded: true };
+          audio.sfxLand();
+          renderStackedBoard();
+
+          // Comprobar desbordamiento total (20 huecos llenos)
+          const isFull = [0, 1, 2, 3].every(c => getLowestAvailableRowInCol(c) === -1);
+          if (isFull && gameState.fallingPieces.length === 0) {
+            endGame(false);
+            return;
+          }
+        }
+      }
+
+      renderFallingPieces();
+      gameState.rafId = requestAnimationFrame(gameLoop);
+    }
+
+    /**
+     * ACTUALIZACIÓN DE ESTADÍSTICAS EN TIEMPO REAL Y CRONÓMETRO
+     */
+    function formatTime(totalSec) {
+      const mins = Math.floor(totalSec / 60);
+      const secs = totalSec % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateDashboardStats() {
+      const total = getActiveElementsList().length;
+      const placed = gameState.placedZ.size;
+      const pct = total > 0 ? Math.round((placed / total) * 100) : 0;
+
+      dom.placedCount.textContent = placed;
+      dom.totalCount.textContent = total;
+      dom.progressPercent.textContent = `${pct}%`;
+      dom.progressBar.style.width = `${pct}%`;
+
+      const records = Object.values(gameState.stats);
+      const completedRecords = records.filter(r => r.placeDuration !== null);
+
+      // Más rápido
+      if (completedRecords.length > 0) {
+        const fastest = completedRecords.reduce((a, b) => (a.placeDuration < b.placeDuration ? a : b));
+        dom.statFastestVal.innerHTML = `<div class="text-xs sm:text-sm font-extrabold text-white truncate">${fastest.element.name} (${fastest.element.sym})</div>`;
+        dom.statFastestTime.textContent = `${fastest.placeDuration.toFixed(2)} s`;
+      } else {
+        dom.statFastestVal.innerHTML = `<div class="text-xs font-bold text-slate-400 italic">Sin datos aún</div>`;
+        dom.statFastestTime.textContent = `-- s`;
+      }
+
+      // Más lento
+      if (completedRecords.length > 0) {
+        const slowest = completedRecords.reduce((a, b) => (a.placeDuration > b.placeDuration ? a : b));
+        dom.statSlowestVal.innerHTML = `<div class="text-xs sm:text-sm font-extrabold text-white truncate">${slowest.element.name} (${slowest.element.sym})</div>`;
+        dom.statSlowestTime.textContent = `${slowest.placeDuration.toFixed(2)} s`;
+      } else {
+        dom.statSlowestVal.innerHTML = `<div class="text-xs font-bold text-slate-400 italic">Sin datos aún</div>`;
+        dom.statSlowestTime.textContent = `-- s`;
+      }
+
+      // Más intentos (fallos = attempts - 1 si ya colocado, o attempts si sigue pendiente)
+      const withFailures = records
+        .map(r => ({
+          element: r.element,
+          failures: r.placeDuration !== null ? Math.max(0, r.attempts - 1) : r.attempts,
+          totalAttempts: r.attempts
+        }))
+        .filter(r => r.failures > 0);
+
+      if (withFailures.length > 0) {
+        const hardest = withFailures.reduce((a, b) => (a.failures > b.failures ? a : b));
+        dom.statAttemptsVal.innerHTML = `<div class="text-xs sm:text-sm font-extrabold text-white truncate">${hardest.element.name} (${hardest.element.sym})</div>`;
+        dom.statAttemptsCount.textContent = `${hardest.failures} ${hardest.failures === 1 ? 'fallo' : 'fallos'}`;
+      } else {
+        dom.statAttemptsVal.innerHTML = `<div class="text-xs font-bold text-slate-400 italic">Sin fallos aún</div>`;
+        dom.statAttemptsCount.textContent = `0 fallos`;
+      }
+    }
+
+    /**
+     * CONTROL DEL CICLO DE PARTIDA (INICIAR, PAUSAR, REINICIAR, FINALIZAR)
+     */
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function resetGame() {
+      cancelAnimationFrame(gameState.rafId);
+      clearInterval(gameState.timerInterval);
+      audio.stopMusic();
+
+      gameState.running = false;
+      gameState.paused = false;
+      gameState.score = 0;
+      gameState.elapsedSeconds = 0;
+      gameState.lastFrameTime = 0;
+      gameState.lastSpawnTime = 0;
+      gameState.deck = shuffleArray(getActiveElementsList());
+      gameState.spawnedZ.clear();
+      gameState.board = Array.from({ length: 5 }, () => Array(4).fill(null));
+      gameState.fallingPieces = [];
+      gameState.stats = {};
+      gameState.placedZ.clear();
+      gameState.selectedPiece = null;
+      gameState.dragging = null;
+
+      dom.timerDisplay.textContent = '00:00';
+      dom.scoreDisplay.textContent = '0';
+      dom.scoreDisplay.className = 'font-mono text-base sm:text-lg font-bold text-emerald-500 tracking-wider';
+      dom.fallingLayer.innerHTML = '';
+
+      dom.btnStartPause.innerHTML = '<i class="fa-solid fa-play"></i> <span>Comenzar</span>';
+      dom.overlayTitle.textContent = '¿Listo para practicar?';
+      dom.overlaySubtitle.textContent = 'Pulsa el botón COMENZAR para iniciar la caída de elementos.';
+      dom.btnOverlayStart.textContent = 'COMENZAR';
+      dom.tetrisOverlay.classList.remove('hidden');
+
+      buildTetrisSlots();
+      buildPeriodicTable();
+      renderStackedBoard();
+      updateDashboardStats();
+    }
+
+    function startOrResumeGame() {
+      audio.initContext();
+
+      if (!gameState.running) {
+        gameState.running = true;
+        gameState.paused = false;
+        gameState.lastFrameTime = 0;
+        gameState.lastSpawnTime = performance.now();
+
+        dom.tetrisOverlay.classList.add('hidden');
+        dom.btnStartPause.innerHTML = '<i class="fa-solid fa-pause"></i> <span>Pausar</span>';
+
+        gameState.timerInterval = setInterval(() => {
+          if (gameState.running && !gameState.paused) {
+            gameState.elapsedSeconds++;
+            dom.timerDisplay.textContent = formatTime(gameState.elapsedSeconds);
+          }
+        }, 1000);
+
+        audio.startMusic();
+        gameState.rafId = requestAnimationFrame(gameLoop);
+      } else if (gameState.paused) {
+        gameState.paused = false;
+        gameState.lastFrameTime = 0;
+        dom.tetrisOverlay.classList.add('hidden');
+        dom.btnStartPause.innerHTML = '<i class="fa-solid fa-pause"></i> <span>Pausar</span>';
+        audio.startMusic();
+        gameState.rafId = requestAnimationFrame(gameLoop);
+      } else {
+        // Pausar
+        gameState.paused = true;
+        cancelAnimationFrame(gameState.rafId);
+        audio.stopMusic();
+        dom.overlayTitle.textContent = 'Partida en pausa';
+        dom.overlaySubtitle.textContent = 'Pulsa continuar cuando estés listo para seguir colocando elementos.';
+        dom.btnOverlayStart.textContent = 'Continuar';
+        dom.tetrisOverlay.classList.remove('hidden');
+        dom.btnStartPause.innerHTML = '<i class="fa-solid fa-play"></i> <span>Seguir</span>';
+      }
+    }
+
+    /**
+     * SISTEMA PERSISTENTE DE TOP-SCORE (7 MEJORES PUNTUACIONES POR TEMARIO)
+     */
+    const TOPSCORE_STORAGE_KEY = 'quimitris_topscore_v1';
+    let pendingTopScoreRecord = null;
+
+    function loadTopScores(difficultyKey) {
+      try {
+        const raw = localStorage.getItem(TOPSCORE_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return Array.isArray(parsed[difficultyKey]) ? parsed[difficultyKey] : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveTopScores(difficultyKey, list) {
+      try {
+        const raw = localStorage.getItem(TOPSCORE_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        parsed[difficultyKey] = list.slice(0, 7);
+        localStorage.setItem(TOPSCORE_STORAGE_KEY, JSON.stringify(parsed));
+      } catch (e) {
+        // Ignorar si el almacenamiento local está bloqueado
+      }
+    }
+
+    function qualifiesForTopScore(difficultyKey, score, elapsedSeconds) {
+      const list = loadTopScores(difficultyKey);
+      if (list.length < 7) return true;
+      const seventh = list[list.length - 1];
+      if (score > seventh.score) return true;
+      if (score === seventh.score && elapsedSeconds < seventh.timeSec) return true;
+      return false;
+    }
+
+    function renderTopScoreList(difficultyKey, highlightId = null) {
+      const listEl = document.getElementById('topscore-list');
+      const badgeEl = document.getElementById('topscore-mode-badge');
+      if (!listEl) return;
+
+      badgeEl.textContent = difficultyKey === 'eso' ? 'Temario: 4º ESO (46)' : 'Temario: Completa (118)';
+      const scores = loadTopScores(difficultyKey);
+
+      if (scores.length === 0) {
+        listEl.innerHTML = `<div class="text-center text-slate-500 italic py-2">Aún no hay puntuaciones registradas en esta categoría.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = scores.map((entry, idx) => {
+        const rank = idx + 1;
+        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+        const isCurrent = highlightId && entry.id === highlightId;
+        const rowClass = isCurrent
+          ? 'bg-amber-500/20 border-amber-400/60 text-amber-200'
+          : 'bg-slate-900/80 border-slate-800/80 text-slate-200';
+
+        return `
+          <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg border ${rowClass}">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="font-mono font-extrabold w-6 text-center shrink-0">${medal}</span>
+              <span class="font-bold truncate">${escapeHtml(entry.name)}</span>
+            </div>
+            <div class="flex items-center gap-3 font-mono shrink-0">
+              <span class="text-[11px] text-slate-400">${formatTime(entry.timeSec)}</span>
+              <span class="font-extrabold text-emerald-400">${entry.score} pts</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function endGame(isVictory, viewOnlyTopScore = false) {
+      const entryBox = document.getElementById('topscore-entry-box');
+      const nameInput = document.getElementById('topscore-name-input');
+
+      if (!viewOnlyTopScore) {
+        gameState.running = false;
+        gameState.paused = false;
+        cancelAnimationFrame(gameState.rafId);
+        clearInterval(gameState.timerInterval);
+        audio.stopMusic();
+
+        if (isVictory) audio.sfxWin();
+        else audio.sfxError();
+
+        const total = getActiveElementsList().length;
+        const placed = gameState.placedZ.size;
+
+        document.getElementById('summary-icon').textContent = isVictory ? '🏆' : '🧪';
+        document.getElementById('summary-title').textContent = isVictory ? '¡Tabla Periódica Completada!' : '¡Zona Tetris Llena!';
+        document.getElementById('summary-subtitle').textContent = isVictory
+          ? '¡Excelente dominio de los elementos químicos de 4º de la ESO!'
+          : 'Se han llenado los 20 huecos de la zona Tetris. ¡Inténtalo de nuevo para batir tu récord!';
+
+        document.getElementById('sum-score').textContent = `${gameState.score} pts`;
+        document.getElementById('sum-time').textContent = formatTime(gameState.elapsedSeconds);
+        document.getElementById('sum-placed').textContent = `${placed} / ${total}`;
+
+        document.getElementById('sum-fastest').textContent =
+          dom.statFastestTime.textContent !== '-- s'
+            ? `${dom.statFastestVal.textContent.trim()} (${dom.statFastestTime.textContent})`
+            : 'Sin datos';
+
+        document.getElementById('sum-slowest').textContent =
+          dom.statSlowestTime.textContent !== '-- s'
+            ? `${dom.statSlowestVal.textContent.trim()} (${dom.statSlowestTime.textContent})`
+            : 'Sin datos';
+
+        document.getElementById('sum-attempts').textContent =
+          dom.statAttemptsCount.textContent !== '0 fallos'
+            ? `${dom.statAttemptsVal.textContent.trim()} (${dom.statAttemptsCount.textContent})`
+            : 'Ningún fallo';
+
+        // Comprobar si la puntuación entra en el TOP-7
+        if (placed > 0 && qualifiesForTopScore(gameState.difficulty, gameState.score, gameState.elapsedSeconds)) {
+          pendingTopScoreRecord = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            score: gameState.score,
+            timeSec: gameState.elapsedSeconds,
+            placed,
+            total
+          };
+          entryBox.classList.remove('hidden');
+          nameInput.value = '';
+          setTimeout(() => nameInput.focus(), 120);
+        } else {
+          pendingTopScoreRecord = null;
+          entryBox.classList.add('hidden');
+        }
+      } else {
+        document.getElementById('summary-icon').textContent = '🏆';
+        document.getElementById('summary-title').textContent = 'Clasificación TOP-SCORE';
+        document.getElementById('summary-subtitle').textContent = 'Las 7 mejores puntuaciones registradas en este dispositivo.';
+        entryBox.classList.add('hidden');
+      }
+
+      renderTopScoreList(gameState.difficulty);
+      document.getElementById('summary-modal').classList.remove('hidden');
+    }
+
+    function commitTopScoreEntry() {
+      if (!pendingTopScoreRecord) return;
+      const input = document.getElementById('topscore-name-input');
+      const cleanName = (input.value || '').trim() || 'Estudiante 4º ESO';
+
+      const list = loadTopScores(gameState.difficulty);
+      list.push({
+        id: pendingTopScoreRecord.id,
+        name: cleanName,
+        score: pendingTopScoreRecord.score,
+        timeSec: pendingTopScoreRecord.timeSec,
+        date: new Date().toLocaleDateString('es-ES')
+      });
+
+      list.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.timeSec - b.timeSec;
+      });
+
+      saveTopScores(gameState.difficulty, list);
+      const savedId = pendingTopScoreRecord.id;
+      pendingTopScoreRecord = null;
+
+      document.getElementById('topscore-entry-box').classList.add('hidden');
+      renderTopScoreList(gameState.difficulty, savedId);
+      showToast(`¡Marca de ${cleanName} guardada en el TOP-7!`, 'success');
+    }
+
+    /**
+     * MODAL DIDÁCTICO DE FICHA DEL ELEMENTO AL HACER CLIC EN LA TABLA
+     */
+    function openElementModal(el) {
+      const catInfo = CATEGORIES[el.cat];
+      const badge = document.getElementById('modal-el-badge');
+      badge.className = `w-20 h-20 rounded-2xl border-2 ${catInfo.css} flex flex-col items-center justify-center shrink-0 shadow-lg`;
+
+      document.getElementById('modal-el-z').textContent = el.z;
+      document.getElementById('modal-el-sym').textContent = el.sym;
+      document.getElementById('modal-el-mass').textContent = el.mass;
+      document.getElementById('modal-el-cat').textContent = catInfo.label;
+      document.getElementById('modal-el-name').textContent = el.name;
+      document.getElementById('modal-el-pos').textContent = `Grupo ${el.group} • Periodo ${el.period}`;
+      document.getElementById('modal-el-config').textContent = el.config;
+      document.getElementById('modal-el-ox').textContent = el.ox;
+      document.getElementById('modal-el-use').textContent = el.use;
+
+      const st = gameState.stats[el.z];
+      if (st && st.placeDuration !== null) {
+        document.getElementById('modal-el-stats').textContent = `${st.placeDuration.toFixed(1)}s • ${st.attempts} ${st.attempts === 1 ? 'intento' : 'intentos'}`;
+      } else {
+        document.getElementById('modal-el-stats').textContent = 'Colocado';
+      }
+
+      document.getElementById('element-modal').classList.remove('hidden');
+    }
+
+    /**
+     * EVENT LISTENERS DE CONTROLES Y MODALES
+     */
+    dom.btnStartPause.addEventListener('click', startOrResumeGame);
+    dom.btnOverlayStart.addEventListener('click', startOrResumeGame);
+    dom.btnReset.addEventListener('click', resetGame);
+
+    // Alternar Modo Claro / Oscuro
+    dom.btnTheme.addEventListener('click', () => {
+      const isLight = document.body.classList.toggle('light-mode');
+      dom.themeIcon.className = isLight ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+      dom.themeLabel.textContent = isLight ? 'Oscuro' : 'Claro';
+      dom.btnTheme.classList.toggle('text-amber-400', !isLight);
+      dom.btnTheme.classList.toggle('text-indigo-600', isLight);
+    });
+
+    // Alternar Música y Sonido
+    dom.btnSound.addEventListener('click', () => {
+      const active = audio.toggle();
+      dom.btnSound.innerHTML = active
+        ? '<i class="fa-solid fa-music text-xs"></i>'
+        : '<i class="fa-solid fa-volume-xmark text-xs text-slate-500"></i>';
+      showToast(active ? 'Música y efectos activados' : 'Audio silenciado', 'info');
+    });
+
+    // Cambios de configuración
+    dom.selectDifficulty.addEventListener('change', (e) => {
+      gameState.difficulty = e.target.value;
+      resetGame();
+    });
+
+    dom.selectSpeed.addEventListener('change', (e) => {
+      gameState.speedMode = e.target.value;
+      const labels = { slow: 'Lento', normal: 'Normal', fast: 'Rápido' };
+      showToast(`Velocidad de caída: ${labels[gameState.speedMode]}`, 'info');
+    });
+
+    dom.selectHints.addEventListener('change', (e) => {
+      gameState.hintMode = e.target.value;
+      buildPeriodicTable();
+      renderStackedBoard();
+      renderFallingPieces();
+    });
+
+    // Alternar visibilidad del número atómico Z
+    dom.btnToggleZ.addEventListener('click', () => {
+      gameState.showAtomicNumber = !gameState.showAtomicNumber;
+      dom.iconToggleZ.className = gameState.showAtomicNumber
+        ? 'fa-solid fa-eye text-emerald-400'
+        : 'fa-solid fa-eye-slash text-rose-400';
+      dom.labelToggleZ.textContent = gameState.showAtomicNumber ? 'Visible' : 'Oculto';
+      buildPeriodicTable();
+      renderStackedBoard();
+      renderFallingPieces();
+      showToast(
+        gameState.showAtomicNumber
+          ? 'Número atómico (Z) visible como pista'
+          : 'Número atómico (Z) oculto (modo desafío)',
+        'info'
+      );
+    });
+
+    // Alternar sombreado por familias químicas en las casillas vacías
+    dom.btnToggleColors.addEventListener('click', () => {
+      gameState.showFamilyColors = !gameState.showFamilyColors;
+      dom.iconToggleColors.className = gameState.showFamilyColors
+        ? 'fa-solid fa-eye text-emerald-400'
+        : 'fa-solid fa-eye-slash text-rose-400';
+      dom.labelToggleColors.textContent = gameState.showFamilyColors ? 'Activado' : 'Oculto';
+      buildPeriodicTable();
+      showToast(
+        gameState.showFamilyColors
+          ? 'Sombreado de familias químicas activado en la tabla'
+          : 'Sombreado de familias químicas oculto',
+        'info'
+      );
+    });
+
+    // Botón para consultar el TOP-SCORE en cualquier momento
+    document.getElementById('btn-topscore-open').addEventListener('click', () => {
+      if (gameState.running && !gameState.paused) {
+        startOrResumeGame(); // Pausar automáticamente al abrir la tabla de récords
+      }
+      endGame(false, true);
+    });
+
+    document.getElementById('btn-save-topscore').addEventListener('click', commitTopScoreEntry);
+    document.getElementById('topscore-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') commitTopScoreEntry();
+    });
+
+    // Modales
+    dom.btnHelp.addEventListener('click', () => document.getElementById('help-modal').classList.remove('hidden'));
+    document.getElementById('close-help-modal').addEventListener('click', () => document.getElementById('help-modal').classList.add('hidden'));
+    document.getElementById('btn-close-help-ok').addEventListener('click', () => document.getElementById('help-modal').classList.add('hidden'));
+    document.getElementById('close-element-modal').addEventListener('click', () => document.getElementById('element-modal').classList.add('hidden'));
+
+    document.getElementById('btn-play-again').addEventListener('click', () => {
+      document.getElementById('summary-modal').classList.add('hidden');
+      resetGame(); // Prepara el tablero pero espera a que el usuario pulse COMENZAR
+    });
+
+    // Recalcular posiciones de piezas en caída si cambia el tamaño de ventana
+    window.addEventListener('resize', () => {
+      renderFallingPieces();
+    });
+
+    // Inicialización al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      buildLegend();
+      resetGame();
+    });
+  </script>
+</body>
+</html>
